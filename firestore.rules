@@ -10,5 +10,6 @@ service cloud.firestore {
       allow update, delete: if false;
     }
     match /feedback/{feedbackId} { allow create: if request.resource.data.keys().hasAll(['orderCode','rating','createdAt']); allow read: if isAdmin(); }
+    match /tracking/{trackingId} { allow create: if request.resource.data.keys().hasAll(['code','username','amount','total','status','createdAt']); allow read: if resource.data.status == 'Pending review'; allow update: if isAdmin(); }
   }
 }

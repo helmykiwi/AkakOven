@@ -75,7 +75,7 @@ async function saveOrder(event) {
       await firebase.storageApi.uploadBytes(receiptRef, receipt, { contentType: receipt.type });
       order.receiptPath = path;
       await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'orders', orderCode), order);
-      await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'tracking', orderCode), { code: orderCode, packageId: item.id, amount: item.amount, total: item.price, status: order.status, createdAt: order.createdAt });
+      await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'tracking', orderCode), { code: orderCode, username: order.username, packageId: item.id, amount: item.amount, total: item.price, status: order.status, createdAt: order.createdAt });
     } else {
       const orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]'); orders.unshift(order); localStorage.setItem('sealy-orders', JSON.stringify(orders));
     }
@@ -85,14 +85,14 @@ async function saveOrder(event) {
 }
 
 async function trackOrder(event) {
-  event.preventDefault(); const orderCode = $('#tracking-code').value.trim().toUpperCase(); const result = $('#tracking-result'); result.hidden = false; result.textContent = 'Finding your order...';
+  event.preventDefault(); const username = $('#tracking-code').value.trim().replace(/^@/, ''); const result = $('#tracking-result'); result.hidden = false; result.textContent = 'Finding your pending order...';
   try {
-    let order;
-    if (firebase) { const snap = await firebase.firestore.getDoc(firebase.firestore.doc(firebase.db, 'tracking', orderCode)); order = snap.exists() ? snap.data() : null; }
-    else order = JSON.parse(localStorage.getItem('sealy-orders') || '[]').find((item) => item.code === orderCode);
-    if (!order) throw new Error('not found');
-    result.innerHTML = `<strong>${order.code}</strong> · ${order.amount} Robux · ${money(Number(order.total))}<br /><span class="status-chip">${order.status}</span>`;
-    const feedback = $('#feedback-form'); feedback.hidden = order.status !== 'Completed'; feedback.dataset.orderCode = order.code;
+    let orders;
+    if (firebase) { const snap = await firebase.firestore.getDocs(firebase.firestore.query(firebase.firestore.collection(firebase.db, 'tracking'), firebase.firestore.where('username', '==', username), firebase.firestore.where('status', '==', 'Pending review'))); orders = snap.docs.map((doc) => doc.data()); }
+    else orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]').filter((item) => item.username.toLowerCase() === username.toLowerCase() && item.status === 'Pending review');
+    if (!orders.length) throw new Error('not found');
+    result.innerHTML = orders.map((order) => `<strong>${order.amount} Robux · ${money(Number(order.total))}</strong><br /><span class="status-chip">${order.status}</span>`).join('<hr>');
+    $('#feedback-form').hidden = true;
   } catch { result.textContent = 'We could not find that order code. Check it and try again.'; }
 }
 
