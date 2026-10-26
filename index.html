@@ -1,8 +1,341 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><meta name="theme-color" content="#0d1a2f"><title>Sealy Blox Shop | Robux via username</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="./redesign.css"><link rel="stylesheet" href="./final-fixes.css"></head>
-<body><header class="topbar"><a class="logo" href="#home">sealybloxshop</a><nav><a href="#services">Services</a><a href="#tracking">Track order</a></nav><a class="top-cta" href="#order">Order Robux</a></header>
-<main id="home"><section class="hero"><div><p class="eyebrow">Robux via username</p><h1>Top up Robux without sharing your password.</h1><p>Choose a package, enter your Roblox username, make payment, and upload your receipt for manual approval.</p><div class="hero-actions"><a href="#order" class="button primary">Order now</a><a href="#tracking" class="button ghost">Check an order</a></div><div class="assurance"><span>✓ Username only</span><span>✓ Receipt review</span><span>✓ Track anytime</span></div></div><div class="hero-card"><p>Sealy Blox Shop</p><div class="robux-mark">R$</div><h2>Robux made easy.</h2><small>Choose · pay · play</small></div></section>
-<section id="services" class="services"><div class="section-copy"><p class="eyebrow">ROBLOX SERVICES</p><h2>Everything starts with the right package.</h2><p>Fast, clear and focused on one secure delivery method.</p></div><div class="service-list"><article><span>01</span><div><h3>Robux via username</h3><p>Robux goes to the public Roblox account you choose.</p></div></article><article><span>02</span><div><h3>Manual payment review</h3><p>We verify uploaded receipts before fulfilment begins.</p></div></article><article><span>03</span><div><h3>Order tracking</h3><p>Your personal order code keeps every update in one place.</p></div></article></div></section>
-<section id="order" class="checkout"><div class="checkout-heading"><p class="eyebrow">PLACE AN ORDER</p><h2>One checkout. Zero passwords.</h2><p>Fill in your Roblox username and contact number. We show the profile before you place an order.</p><div class="notice"><b>Important</b><span>Only pay after checking the total and Roblox profile shown.</span></div></div><form class="checkout-form" id="order-form"><div class="field"><label for="roblox-username">Roblox username</label><div class="input-action"><span>@</span><input id="roblox-username" name="username" placeholder="yourusername" autocomplete="username" required><button type="button" id="lookup-button">Check profile</button></div><small id="profile-help" hidden></small></div><div id="profile-preview" class="profile-preview" hidden><img id="profile-avatar" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt=""><div><b id="profile-name"></b><span id="profile-handle"></span><a id="profile-link" href="#" target="_blank" rel="noopener">Open Roblox profile ↗</a></div><em>Profile found</em></div><div class="field"><label>Choose your package</label><div class="order-package-grid" id="order-package-grid" role="radiogroup" aria-label="Robux package">
-<button class="order-package-option" type="button" role="radio" aria-checked="false" data-order-package="r100"><b>100R</b><small>RM3.85</small></button><button class="order-package-option" type="button" role="radio" aria-checked="false" data-order-package="r200"><b>200R</b><small>RM7.70</small></button><button class="order-package-option" type="button" role="radio" aria-checked="false" data-order-package="r300"><b>300R</b><small>RM11.55</small></button><button class="order-package-option" type="button" role="radio" aria-checked="false" data-order-package="r400"><b>400R</b><small>RM15.40</small></button><button class="order-package-option" type="button" role="radio" aria-checked="false" data-order-package="r500"><b>500R</b><small>RM19.25</small></button><button class="order-package-option" type="button" role="radio" aria-checked="false" data-order-package="r600"><b>600R</b><small>RM23.10</small></button><button class="order-package-option" type="button" role="radio" aria-checked="false" data-order-package="r700"><b>700R</b><small>RM26.95</small></button><button class="order-package-option" type="button" role="radio" aria-checked="false" data-order-package="r800"><b>800R</b><small>RM30.80</small></button><button class="order-package-option" type="button" role="radio" aria-checked="false" data-order-package="r900"><b>900R</b><small>RM34.65</small></button><button class="order-package-option" type="button" role="radio" aria-checked="false" data-order-package="r1000"><b>1000R</b><small>RM38.50</small></button></div><input id="package-select" name="package" type="hidden" value=""></div><div class="pay-card"><div><p class="eyebrow">PAYMENT</p><h3>Scan this DuitNow QR</h3><p>Pay to Betty Gregory with Touch ’n Go or any supported banking app.</p></div><button class="qr-expand" id="qr-open" type="button"><img src="./public/touchngo-qr.png" alt="DuitNow QR for Betty Gregory"><span>Tap to enlarge</span></button></div><div class="field"><label for="whatsapp">WhatsApp number</label><input id="whatsapp" name="whatsapp" placeholder="01X-XXXXXXX" inputmode="tel" required></div><div class="field"><label for="receipt">Payment receipt</label><label class="upload" for="receipt"><span>↥</span><div><b>Upload receipt</b><small>PNG, JPG, WEBP or PDF · maximum 10MB</small></div><strong id="receipt-name">Choose file</strong></label><input class="file-input" id="receipt" name="receipt" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" required></div><div class="field"><label for="note">Order note <i>optional</i></label><textarea id="note" name="note" rows="3" placeholder="Anything we should know?"></textarea></div><div class="submit-row"><div><small>Total payment</small><b id="order-total"></b></div><button class="button primary" type="submit">Submit order</button></div><p class="form-status" id="order-status" role="status"></p></form></section><dialog class="qr-dialog" id="qr-dialog"><button type="button" id="qr-close" aria-label="Close QR">×</button><p>Scan to pay Betty Gregory</p><img src="./public/touchngo-qr.png" alt="Large DuitNow QR for Betty Gregory"></dialog>
-<section id="tracking" class="tracking"><div><p class="eyebrow">CHECK YOUR ORDER</p><h2>Order updates, one code away.</h2><p>Enter the tracking code given after you submit your receipt.</p></div><form id="tracking-form"><label for="tracking-code">Order code</label><div><input id="tracking-code" placeholder="SB-ABCDE" required><button class="button primary" type="submit">Track order</button></div></form><div id="tracking-result" class="tracking-result" hidden></div></section></main><footer><a class="logo" href="#home">sealybloxshop</a><p>Independent Roblox top-up service. Roblox is a trademark of Roblox Corporation.</p></footer><script>document.querySelectorAll('[data-order-package]').forEach(function(button){button.addEventListener('click',function(){var amount=button.querySelector('small').textContent;document.querySelectorAll('[data-order-package]').forEach(function(item){item.classList.remove('selected');item.setAttribute('aria-checked','false')});button.classList.add('selected');button.setAttribute('aria-checked','true');document.querySelector('#package-select').value=button.dataset.orderPackage;document.querySelector('#order-total').textContent=amount})});document.querySelector('#qr-open').addEventListener('click',function(){document.querySelector('#qr-dialog').showModal()});document.querySelector('#qr-close').addEventListener('click',function(){document.querySelector('#qr-dialog').close()})</script><script type="module" src="./app.js"></script></body></html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <meta name="theme-color" content="#0d1a2f" />
+    <title>Sealy Blox Shop | Robux via username</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./redesign.css" />
+    <link rel="stylesheet" href="./final-fixes.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="logo" href="#home">sealybloxshop</a>
+      <nav>
+        <a href="#services">Services</a><a href="#tracking">Track order</a>
+      </nav>
+      <a class="top-cta" href="#order">Order Robux</a>
+    </header>
+    <main id="home">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Robux via username</p>
+          <h1>Top up Robux without sharing your password.</h1>
+          <p>
+            Choose a package, enter your Roblox username, make payment, and
+            upload your receipt for manual approval.
+          </p>
+          <div class="hero-actions">
+            <a href="#order" class="button primary">Order now</a
+            ><a href="#tracking" class="button ghost">Check an order</a>
+          </div>
+          <div class="assurance">
+            <span>✓ Username only</span><span>✓ Receipt review</span
+            ><span>✓ Track anytime</span>
+          </div>
+        </div>
+        <div class="hero-card">
+          <p>Sealy Blox Shop</p>
+          <div class="robux-mark">R$</div>
+          <h2>Robux made easy.</h2>
+          <small>Choose · pay · play</small>
+        </div>
+      </section>
+      <section id="services" class="services">
+        <div class="section-copy">
+          <p class="eyebrow">ROBLOX SERVICES</p>
+          <h2>Everything starts with the right package.</h2>
+          <p>Fast, clear and focused on one secure delivery method.</p>
+        </div>
+        <div class="service-list">
+          <article>
+            <span>01</span>
+            <div>
+              <h3>Robux via username</h3>
+              <p>Robux goes to the public Roblox account you choose.</p>
+            </div>
+          </article>
+          <article>
+            <span>02</span>
+            <div>
+              <h3>Manual payment review</h3>
+              <p>We verify uploaded receipts before fulfilment begins.</p>
+            </div>
+          </article>
+          <article>
+            <span>03</span>
+            <div>
+              <h3>Order tracking</h3>
+              <p>Your personal order code keeps every update in one place.</p>
+            </div>
+          </article>
+        </div>
+      </section>
+      <section id="order" class="checkout">
+        <div class="checkout-heading">
+          <p class="eyebrow">PLACE AN ORDER</p>
+          <h2>One checkout. Zero passwords.</h2>
+          <p>
+            Fill in your Roblox username and contact number. We show the profile
+            before you place an order.
+          </p>
+          <div class="notice">
+            <b>Important</b
+            ><span
+              >Only pay after checking the total and Roblox profile shown.</span
+            >
+          </div>
+        </div>
+        <form class="checkout-form" id="order-form">
+          <div class="field">
+            <label for="roblox-username">Roblox username</label>
+            <div class="input-action">
+              <span>@</span
+              ><input
+                id="roblox-username"
+                name="username"
+                placeholder="yourusername"
+                autocomplete="username"
+                required
+              /><button type="button" id="lookup-button">Check profile</button>
+            </div>
+            <small id="profile-help" hidden></small>
+          </div>
+          <div id="profile-preview" class="profile-preview" hidden>
+            <img
+              id="profile-avatar"
+              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+              alt=""
+            />
+            <div>
+              <b id="profile-name"></b><span id="profile-handle"></span
+              ><a id="profile-link" href="#" target="_blank" rel="noopener"
+                >Open Roblox profile ↗</a
+              >
+            </div>
+            <em>Profile found</em>
+          </div>
+          <div class="field">
+            <label>Choose your package</label>
+            <div
+              class="order-package-grid"
+              id="order-package-grid"
+              role="radiogroup"
+              aria-label="Robux package"
+            >
+              <button
+                class="order-package-option"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                data-order-package="r100"
+              >
+                <b>100R</b><small>RM3.85</small></button
+              ><button
+                class="order-package-option"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                data-order-package="r200"
+              >
+                <b>200R</b><small>RM7.70</small></button
+              ><button
+                class="order-package-option"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                data-order-package="r300"
+              >
+                <b>300R</b><small>RM11.55</small></button
+              ><button
+                class="order-package-option"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                data-order-package="r400"
+              >
+                <b>400R</b><small>RM15.40</small></button
+              ><button
+                class="order-package-option"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                data-order-package="r500"
+              >
+                <b>500R</b><small>RM19.25</small></button
+              ><button
+                class="order-package-option"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                data-order-package="r600"
+              >
+                <b>600R</b><small>RM23.10</small></button
+              ><button
+                class="order-package-option"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                data-order-package="r700"
+              >
+                <b>700R</b><small>RM26.95</small></button
+              ><button
+                class="order-package-option"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                data-order-package="r800"
+              >
+                <b>800R</b><small>RM30.80</small></button
+              ><button
+                class="order-package-option"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                data-order-package="r900"
+              >
+                <b>900R</b><small>RM34.65</small></button
+              ><button
+                class="order-package-option"
+                type="button"
+                role="radio"
+                aria-checked="false"
+                data-order-package="r1000"
+              >
+                <b>1000R</b><small>RM38.50</small>
+              </button>
+            </div>
+            <input id="package-select" name="package" type="hidden" value="" />
+          </div>
+          <div class="pay-card">
+            <div>
+              <p class="eyebrow">PAYMENT</p>
+              <h3>Scan this DuitNow QR</h3>
+              <p>
+                Pay to Betty Gregory with Touch ’n Go or any supported banking
+                app.
+              </p>
+            </div>
+            <button class="qr-expand" id="qr-open" type="button">
+              <img
+                src="./public/touchngo-qr.png"
+                alt="DuitNow QR for Betty Gregory"
+              /><span>Tap to enlarge</span>
+            </button>
+          </div>
+          <div class="field">
+            <label for="whatsapp">WhatsApp number</label
+            ><input
+              id="whatsapp"
+              name="whatsapp"
+              placeholder="01X-XXXXXXX"
+              inputmode="tel"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="receipt">Payment receipt</label
+            ><label class="upload" for="receipt"
+              ><span>↥</span>
+              <div>
+                <b>Upload receipt</b
+                ><small>PNG, JPG, WEBP or PDF · maximum 10MB</small>
+              </div>
+              <strong id="receipt-name">Choose file</strong></label
+            ><input
+              class="file-input"
+              id="receipt"
+              name="receipt"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,application/pdf"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="note">Order note <i>optional</i></label
+            ><textarea
+              id="note"
+              name="note"
+              rows="3"
+              placeholder="Anything we should know?"
+            ></textarea>
+          </div>
+          <div class="submit-row">
+            <div><small>Total payment</small><b id="order-total"></b></div>
+            <button class="button primary" type="submit">Submit order</button>
+          </div>
+          <p class="form-status" id="order-status" role="status"></p>
+        </form>
+      </section>
+      <dialog class="qr-dialog" id="qr-dialog">
+        <button type="button" id="qr-close" aria-label="Close QR">×</button>
+        <p>Scan to pay Betty Gregory</p>
+        <img
+          src="./public/touchngo-qr.png"
+          alt="Large DuitNow QR for Betty Gregory"
+        />
+      </dialog>
+      <section id="tracking" class="tracking">
+        <div>
+          <p class="eyebrow">CHECK YOUR ORDER</p>
+          <h2>Order updates, one code away.</h2>
+          <p>Enter the tracking code given after you submit your receipt.</p>
+        </div>
+        <form id="tracking-form">
+          <label for="tracking-code">Order code</label>
+          <div>
+            <input id="tracking-code" placeholder="SB-ABCDE" required /><button
+              class="button primary"
+              type="submit"
+            >
+              Track order
+            </button>
+          </div>
+        </form>
+        <div id="tracking-result" class="tracking-result" hidden></div>
+      </section>
+    </main>
+    <footer>
+      <a class="logo" href="#home">sealybloxshop</a>
+      <p>
+        Independent Roblox top-up service. Roblox is a trademark of Roblox
+        Corporation.
+      </p>
+    </footer>
+    <script>
+      document
+        .querySelectorAll("[data-order-package]")
+        .forEach(function (button) {
+          button.addEventListener("click", function () {
+            var amount = button.querySelector("small").textContent;
+            document
+              .querySelectorAll("[data-order-package]")
+              .forEach(function (item) {
+                item.classList.remove("selected");
+                item.setAttribute("aria-checked", "false");
+              });
+            button.classList.add("selected");
+            button.setAttribute("aria-checked", "true");
+            document.querySelector("#package-select").value =
+              button.dataset.orderPackage;
+            document.querySelector("#order-total").textContent = amount;
+          });
+        });
+      document.querySelector("#qr-open").addEventListener("click", function () {
+        document.querySelector("#qr-dialog").showModal();
+      });
+      document
+        .querySelector("#qr-close")
+        .addEventListener("click", function () {
+          document.querySelector("#qr-dialog").close();
+        });
+    </script>
+    <script type="module" src="./app.js?v=roblox-lookup-20261026"></script>
+  </body>
+</html>
