@@ -35,7 +35,7 @@ function draw(orders, items, feedback) {
     ? orders
         .map(
           (o) =>
-            `<article class="row"><div><b>${o.code}</b><span>@${o.username} · ${o.amount}R · ${money(o.total)}</span></div><div><small>${o.whatsapp || ""}</small>${o.receiptChunkCount ? `<a href="#" data-receipt-chunks="${o.code}" data-receipt-name="${o.receiptName || 'receipt'}">Open receipt</a>` : o.receiptPath ? `<a href="#" data-receipt="${o.receiptPath}">Open receipt</a>` : `<small>Receipt uploading…</small>`}</div><select data-status="${o.code}">${["Pending review", "Payment approved", "Processing", "Completed", "Rejected"].map((s) => `<option ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}</select><button class="delete-order" type="button" data-delete="${o.code}">Delete</button></article>`,
+            `<article class="row"><div><b>${o.code}</b><span>@${o.username} · ${o.amount}R · ${money(o.total)}</span></div><div><small>${o.whatsapp || ""}</small>${o.receiptChunkCount || o.receiptName ? `<a href="#" data-receipt-chunks="${o.code}" data-receipt-name="${o.receiptName || 'receipt'}">Open receipt</a>` : o.receiptPath ? `<a href="#" data-receipt="${o.receiptPath}">Open receipt</a>` : `<small>No receipt uploaded</small>`}</div><select data-status="${o.code}">${["Pending review", "Payment approved", "Processing", "Completed", "Rejected"].map((s) => `<option ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}</select><button class="delete-order" type="button" data-delete="${o.code}">Delete</button></article>`,
         )
         .join("")
     : "<p>No orders yet.</p>";
@@ -140,14 +140,16 @@ $("#order-list").addEventListener("click", async (e) => {
   const receiptOrder = e.target.dataset.receiptChunks;
   if (receiptOrder && fb) {
     e.preventDefault();
-    const preview = window.open("", "_blank", "noopener");
+    const preview = window.open("", "_blank");
     try {
       const chunks = (await fb.fs.getDocs(fb.fs.query(fb.fs.collection(fb.db, "receipts", receiptOrder, "chunks"), fb.fs.orderBy("index", "asc")))).docs.map((doc) => doc.data());
       const base64 = chunks.map((chunk) => chunk.data).join("");
       const binary = atob(base64); const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
       const url = URL.createObjectURL(new Blob([bytes], { type: chunks[0]?.mime || "application/octet-stream" }));
-      if (preview) preview.location.href = url; else window.open(url, "_blank", "noopener");
+      if (!preview) throw new Error("Preview window was blocked");
+      preview.opener = null;
+      preview.location.replace(url);
     } catch { if (preview) preview.close(); window.alert("Could not open this receipt. Please try again."); }
     return;
   }
