@@ -127,7 +127,7 @@ async function trackOrder(event) {
           firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('usernameLower', '==', usernameLower), firebase.firestore.where('statusUpdatedAt', '>', cutoff))),
           firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('username', '==', username), firebase.firestore.where('status', '==', 'Pending review')))
         ]);
-        orders = [...orders, ...pending.docs, ...recentlyUpdated.docs, ...legacyPending.docs].reduce((unique, item) => {
+        orders = [...pending.docs, ...recentlyUpdated.docs, ...legacyPending.docs, ...orders].reduce((unique, item) => {
           const order = typeof item.data === 'function' ? item.data() : item;
           return unique.some((saved) => saved.code === order.code) ? unique : [...unique, order];
         }, []);
