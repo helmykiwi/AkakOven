@@ -14,6 +14,8 @@ let orderPage = 0;
 let feedbackPage = 0;
 const pageSize = 5;
 let loadedOrders = [];
+let notificationsReady = false;
+let toastTimer;
 async function setup() {
   if (!firebaseConfig.apiKey) return;
   const [{ initializeApp }, fs, auth, storage] = await Promise.all([
@@ -110,11 +112,17 @@ async function load() {
   $("#locked").hidden = true;
   $("#dashboard").hidden = false;
   $("#signout").hidden = false;
+  $("#admin-top-actions").hidden = false;
 }
 function startLiveUpdates() {
   const refresh = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(() => load().catch(() => {}), 180); };
   stopLiveOrders?.(); stopLiveFeedback?.();
-  stopLiveOrders = fb.fs.onSnapshot(fb.fs.collection(fb.db, "orders"), refresh);
+  notificationsReady = false;
+  stopLiveOrders = fb.fs.onSnapshot(fb.fs.collection(fb.db, "orders"), (snapshot) => {
+    if (notificationsReady) snapshot.docChanges().filter((change) => change.type === "added").forEach((change) => announceNewOrder(change.doc.data()));
+    notificationsReady = true;
+    refresh();
+  });
   stopLiveFeedback = fb.fs.onSnapshot(fb.fs.collection(fb.db, "feedback"), refresh);
 }
 $("#login-form").addEventListener("submit", async (e) => {
@@ -143,12 +151,24 @@ $("#login-form").addEventListener("submit", async (e) => {
     $("#login-status").textContent = err.message;
   }
 });
+function announceNewOrder(order) {
+  const message = `New order: ${order.amount}R from @${order.username}`;
+  const toast = $("#order-toast"); toast.textContent = message; toast.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.hidden = true; }, 6000);
+  if ("Notification" in window && Notification.permission === "granted") new Notification("Sealy Blox Shop", { body: message });
+}
+$("#enable-notifications").addEventListener("click", async () => {
+  if (!("Notification" in window)) { $("#enable-notifications").textContent = "Browser alerts unavailable"; return; }
+  const permission = await Notification.requestPermission();
+  $("#enable-notifications").textContent = permission === "granted" ? "Alerts enabled" : "Alerts blocked";
+});
 $("#signout").addEventListener("click", async () => {
   if (fb) await fb.authApi.signOut(fb.auth);
   stopLiveOrders?.(); stopLiveFeedback?.(); stopLiveOrders = undefined; stopLiveFeedback = undefined;
   $("#dashboard").hidden = true;
   $("#locked").hidden = false;
   $("#signout").hidden = true;
+  $("#admin-top-actions").hidden = true;
 });
 $("#save-order-status").addEventListener("click", async () => {
   const button = $("#save-order-status"); button.textContent = "Saving..."; button.disabled = true;
