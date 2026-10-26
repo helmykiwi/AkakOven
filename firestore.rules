@@ -23,6 +23,6 @@ service cloud.firestore {
       allow create: if request.resource.data.keys().hasAll(['data','index','mime','name']) && request.resource.data.data is string && request.resource.data.data.size() <= 500000;
       allow read, delete: if isAdmin();
     }
-    match /tracking/{trackingId} { allow create: if request.resource.data.keys().hasAll(['code','username','amount','total','status','createdAt']); allow read: if resource.data.status == 'Pending review' || resource.data.statusUpdatedAt > request.time - duration.value(2, 'h'); allow update, delete: if isAdmin(); }
+    match /tracking/{trackingId} { allow create: if request.resource.data.keys().hasAll(['code','username','amount','total','status','createdAt']); allow read: if true; allow update, delete: if isAdmin(); }
   }
 }
