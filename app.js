@@ -5,6 +5,7 @@ let activePackages = [...packages];
 let selectedId = null;
 let foundProfile = null;
 let firebase = null;
+let firebaseReady;
 const profileLookupEndpoint = 'https://tfpovaymjiopqxgwibck.supabase.co/functions/v1/roblox-profile';
 
 const $ = (selector) => document.querySelector(selector);
@@ -88,10 +89,13 @@ async function saveOrder(event) {
   if (!item) { status.textContent = 'Choose a Robux package before submitting.'; return; }
   if (!foundProfile) { status.textContent = 'Find and verify the Roblox profile before submitting.'; return; }
   if (!receipt) { status.textContent = 'Please upload your payment receipt.'; return; }
-  const orderCode = code(); status.textContent = 'Creating your order...';
+  const orderCode = code(); status.textContent = 'Connecting to the shop…';
+  await firebaseReady;
+  if (!firebase) { status.textContent = 'Could not connect to the shop. Please refresh and submit your order again.'; return; }
+  status.textContent = 'Creating your order...';
   const order = { code: orderCode, username: foundProfile.username, robloxUserId: foundProfile.id, profileName: foundProfile.name, packageId: item.id, amount: item.amount, total: item.price, whatsapp: $('#whatsapp').value.trim(), note: $('#note').value.trim(), status: 'Pending review', createdAt: new Date().toISOString(), receiptName: receipt.name };
   try {
-    if (firebase) {
+    {
       await firebase.firestore.runTransaction(firebase.db, async (transaction) => {
         if (item.id !== 'other') {
           const packageRef = firebase.firestore.doc(firebase.db, 'packages', item.id);
@@ -104,10 +108,8 @@ async function saveOrder(event) {
       await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'tracking', orderCode), { code: orderCode, username: order.username, usernameLower: order.username.toLowerCase(), packageId: item.id, amount: item.amount, total: item.price, status: order.status, createdAt: order.createdAt });
       status.textContent = 'Order saved. Uploading your receipt securely...';
       await uploadReceipt(orderCode, receipt);
-    } else {
-      const orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]'); orders.unshift(order); localStorage.setItem('sealy-orders', JSON.stringify(orders));
     }
-    rememberRecentOrder({ code: order.code, username: order.username, usernameLower: order.username.toLowerCase(), amount: order.amount, total: order.total, status: order.status, createdAt: order.createdAt });
+    rememberRecentOrder({ code: order.code, username: order.username, usernameLower: order.username.toLowerCase(), amount: order.amount, total: order.total, status: order.status, createdAt: order.createdAt, confirmed: true });
     status.textContent = 'Order successfully sent! We will review your receipt shortly.';
     event.target.reset(); foundProfile = null; $('#profile-preview').hidden = true;
     window.setTimeout(() => { feedbackRating = 0; $('#feedback-form').reset(); $('#feedback-status').textContent = ''; document.querySelectorAll('[data-rating]').forEach((star) => star.classList.remove('selected')); $('#feedback-form').dataset.orderCode = orderCode; $('#review-dialog').showModal(); }, 1600);
@@ -117,7 +119,8 @@ async function saveOrder(event) {
 async function trackOrder(event) {
   event.preventDefault(); const username = $('#tracking-code').value.trim().replace(/^@/, ''); const usernameLower = username.toLowerCase(); const result = $('#tracking-result'); result.hidden = false; result.textContent = 'Finding your latest order...';
   try {
-    let orders = recentOrderCache().filter((item) => item.usernameLower === usernameLower && new Date(item.createdAt).getTime() > Date.now() - 2 * 60 * 60 * 1000);
+    await firebaseReady;
+    let orders = recentOrderCache().filter((item) => item.confirmed === true && item.usernameLower === usernameLower && new Date(item.createdAt).getTime() > Date.now() - 2 * 60 * 60 * 1000);
     if (firebase) {
       try {
         const tracking = firebase.firestore.collection(firebase.db, 'tracking');
@@ -133,7 +136,6 @@ async function trackOrder(event) {
         }, []);
       } catch { /* The just-submitted browser cache remains available while Firebase retries. */ }
     }
-    else orders = [...orders, ...JSON.parse(localStorage.getItem('sealy-orders') || '[]').filter((item) => item.username.toLowerCase() === username.toLowerCase() && (item.status === 'Pending review' || (item.statusUpdatedAt && Date.now() - new Date(item.statusUpdatedAt).getTime() < 2 * 60 * 60 * 1000)))].reduce((unique, order) => unique.some((saved) => saved.code === order.code) ? unique : [...unique, order], []);
     if (!orders.length) throw new Error('not found');
     result.innerHTML = orders.map((order) => `<strong>${order.amount} Robux · ${money(Number(order.total))}</strong><br /><span class="status-chip">${order.status}</span>`).join('<hr>');
   } catch { result.textContent = 'We could not find a recent order for that username yet.'; }
@@ -179,4 +181,4 @@ let feedbackRating = 0;
 $('#review-close').addEventListener('click', () => $('#review-dialog').close());
 document.querySelectorAll('[data-rating]').forEach((button) => button.addEventListener('click', () => { feedbackRating = Number(button.dataset.rating); document.querySelectorAll('[data-rating]').forEach((star) => star.classList.toggle('selected', Number(star.dataset.rating) <= feedbackRating)); }));
 $('#feedback-form').addEventListener('submit', async (event) => { event.preventDefault(); if (!feedbackRating) { $('#feedback-status').textContent = 'Choose a star rating first.'; return; } const payload = { orderCode: event.currentTarget.dataset.orderCode, rating: feedbackRating, note: $('#feedback-note').value.trim(), createdAt: new Date().toISOString() }; try { if (firebase) await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'feedback', `${payload.orderCode}-${Date.now()}`), payload); else localStorage.setItem(`sealy-feedback-${payload.orderCode}`, JSON.stringify(payload)); $('#feedback-status').textContent = 'Thank you for your feedback!'; setTimeout(() => $('#review-dialog').close(), 900); } catch { $('#feedback-status').textContent = 'Could not send feedback. Please try again.'; } });
-renderPackages(); setupFirebase().then(() => { if (firebase) firebase.firestore.onSnapshot(firebase.firestore.query(firebase.firestore.collection(firebase.db, 'feedback'), firebase.firestore.orderBy('createdAt', 'desc')), (snapshot) => renderPublicReviews(snapshot.docs.map((doc) => doc.data())), () => renderPublicReviews([])); }).catch((error) => console.warn('Firebase is not configured:', error));
+renderPackages(); firebaseReady = setupFirebase().then(() => { if (firebase) firebase.firestore.onSnapshot(firebase.firestore.query(firebase.firestore.collection(firebase.db, 'feedback'), firebase.firestore.orderBy('createdAt', 'desc')), (snapshot) => renderPublicReviews(snapshot.docs.map((doc) => doc.data())), () => renderPublicReviews([])); }).catch((error) => { console.warn('Firebase is not configured:', error); firebase = null; });
