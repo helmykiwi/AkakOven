@@ -71,11 +71,11 @@ async function saveOrder(event) {
   try {
     if (firebase) {
       const path = `receipts/${orderCode}-${receipt.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
-      const receiptRef = firebase.storageApi.ref(firebase.store, path);
-      await firebase.storageApi.uploadBytes(receiptRef, receipt, { contentType: receipt.type });
-      order.receiptPath = path;
       await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'orders', orderCode), order);
       await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'tracking', orderCode), { code: orderCode, username: order.username, packageId: item.id, amount: item.amount, total: item.price, status: order.status, createdAt: order.createdAt });
+      status.innerHTML = `Order received. Your tracking code is <strong>${orderCode}</strong>. Receipt is uploading in the background.`;
+      const receiptRef = firebase.storageApi.ref(firebase.store, path);
+      firebase.storageApi.uploadBytes(receiptRef, receipt, { contentType: receipt.type }).then(() => firebase.firestore.updateDoc(firebase.firestore.doc(firebase.db, 'orders', orderCode), { receiptPath: path })).catch(() => {});
     } else {
       const orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]'); orders.unshift(order); localStorage.setItem('sealy-orders', JSON.stringify(orders));
     }
