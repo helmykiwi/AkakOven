@@ -94,8 +94,8 @@ async function saveOrder(event) {
           transaction.update(packageRef, { stock: Number(packageDoc.data().stock) - 1 });
         }
         transaction.set(firebase.firestore.doc(firebase.db, 'orders', orderCode), order);
-        transaction.set(firebase.firestore.doc(firebase.db, 'tracking', orderCode), { code: orderCode, username: order.username, usernameLower: order.username.toLowerCase(), packageId: item.id, amount: item.amount, total: item.price, status: order.status, createdAt: order.createdAt });
       });
+      await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'tracking', orderCode), { code: orderCode, username: order.username, usernameLower: order.username.toLowerCase(), packageId: item.id, amount: item.amount, total: item.price, status: order.status, createdAt: order.createdAt });
       status.textContent = 'Order saved. Uploading your receipt securely...';
       await uploadReceipt(orderCode, receipt);
     } else {

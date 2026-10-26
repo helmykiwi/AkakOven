@@ -77,6 +77,25 @@ async function load() {
   const packages = (
     await fb.fs.getDocs(fb.fs.query(fb.fs.collection(fb.db, "packages"), fb.fs.orderBy("amount", "asc")))
   ).docs.map((d) => d.data());
+  await Promise.all(orders.map(async (order) => {
+    const trackingRef = fb.fs.doc(fb.db, "tracking", order.code);
+    const trackingDoc = await fb.fs.getDoc(trackingRef);
+    if (trackingDoc.exists()) {
+      if (!trackingDoc.data().usernameLower) await fb.fs.updateDoc(trackingRef, { usernameLower: String(order.username || "").toLowerCase() });
+      return;
+    }
+    await fb.fs.setDoc(trackingRef, {
+      code: order.code,
+      username: order.username,
+      usernameLower: String(order.username || "").toLowerCase(),
+      packageId: order.packageId,
+      amount: order.amount,
+      total: order.total,
+      status: order.status,
+      createdAt: order.createdAt,
+      ...(order.status === "Pending review" ? {} : { statusUpdatedAt: fb.fs.serverTimestamp() })
+    });
+  }));
   const feedback = (
     await fb.fs.getDocs(
       fb.fs.query(
