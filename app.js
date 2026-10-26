@@ -15,6 +15,16 @@ const customPackage = () => {
   return selectedId === 'other' && amount >= 100 && amount <= 5000 ? { id: 'other', amount, price: Number((amount * 3.85 / 100).toFixed(2)), stock: 1 } : null;
 };
 const code = () => `SB-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+async function uploadReceipt(orderCode, file) {
+  const dataUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
+  const base64 = String(dataUrl).split(',')[1] || '';
+  const chunkSize = 450000;
+  const chunkCount = Math.ceil(base64.length / chunkSize);
+  for (let index = 0; index < chunkCount; index += 1) {
+    await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'receipts', orderCode, 'chunks', String(index).padStart(3, '0')), { data: base64.slice(index * chunkSize, (index + 1) * chunkSize), index, mime: file.type, name: file.name });
+  }
+  await firebase.firestore.updateDoc(firebase.firestore.doc(firebase.db, 'orders', orderCode), { receiptChunkCount: chunkCount, receiptMime: file.type });
+}
 
 function renderPackages() {
   const storefrontGrid = $('#package-grid'); if (storefrontGrid) storefrontGrid.innerHTML = activePackages.map((item) => `<button class="package-card ${item.id === selectedId ? 'selected' : ''}" type="button" data-package="${item.id}" ${item.stock < 1 ? 'disabled' : ''}><b>${item.amount}R</b><span>${money(item.price)}</span><small>${item.stock > 0 ? `${item.stock} in stock` : 'Sold out'}</small></button>`).join('');
@@ -41,8 +51,14 @@ async function setupFirebase() {
   ]);
   const app = initializeApp(firebaseConfig);
   firebase = { db: firestore.getFirestore(app), auth: auth.getAuth(app), store: storage.getStorage(app), firestore, authApi: auth, storageApi: storage };
-  const snapshot = await firestore.getDocs(firestore.collection(firebase.db, 'packages'));
-  if (!snapshot.empty) { activePackages = packages.map((item) => ({ ...item, ...(snapshot.docs.find((doc) => doc.id === item.id)?.data() || {}) })); renderPackages(); }
+  const packageCollection = firestore.collection(firebase.db, 'packages');
+  const syncPackages = (snapshot) => {
+    if (snapshot.empty) return;
+    activePackages = packages.map((item) => ({ ...item, ...(snapshot.docs.find((doc) => doc.id === item.id)?.data() || {}) }));
+    renderPackages();
+  };
+  syncPackages(await firestore.getDocs(packageCollection));
+  firestore.onSnapshot(packageCollection, syncPackages);
 }
 
 async function findProfile() {
@@ -70,17 +86,24 @@ async function saveOrder(event) {
   const order = { code: orderCode, username: foundProfile.username, robloxUserId: foundProfile.id, profileName: foundProfile.name, packageId: item.id, amount: item.amount, total: item.price, whatsapp: $('#whatsapp').value.trim(), note: $('#note').value.trim(), status: 'Pending review', createdAt: new Date().toISOString(), receiptName: receipt.name };
   try {
     if (firebase) {
-      const path = `receipts/${orderCode}-${receipt.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
-      await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'orders', orderCode), order);
-      await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'tracking', orderCode), { code: orderCode, username: order.username, packageId: item.id, amount: item.amount, total: item.price, status: order.status, createdAt: order.createdAt });
-      status.textContent = 'Order received. Receipt is uploading in the background — check your latest pending order anytime using your Roblox username.';
-      const receiptRef = firebase.storageApi.ref(firebase.store, path);
-      firebase.storageApi.uploadBytes(receiptRef, receipt, { contentType: receipt.type }).then(() => firebase.firestore.updateDoc(firebase.firestore.doc(firebase.db, 'orders', orderCode), { receiptPath: path })).catch(() => {});
+      await firebase.firestore.runTransaction(firebase.db, async (transaction) => {
+        if (item.id !== 'other') {
+          const packageRef = firebase.firestore.doc(firebase.db, 'packages', item.id);
+          const packageDoc = await transaction.get(packageRef);
+          if (!packageDoc.exists() || Number(packageDoc.data().stock) < 1) throw new Error('This package is sold out. Please choose another amount.');
+          transaction.update(packageRef, { stock: Number(packageDoc.data().stock) - 1 });
+        }
+        transaction.set(firebase.firestore.doc(firebase.db, 'orders', orderCode), order);
+        transaction.set(firebase.firestore.doc(firebase.db, 'tracking', orderCode), { code: orderCode, username: order.username, packageId: item.id, amount: item.amount, total: item.price, status: order.status, createdAt: order.createdAt });
+      });
+      status.textContent = 'Order saved. Uploading your receipt securely...';
+      await uploadReceipt(orderCode, receipt);
     } else {
       const orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]'); orders.unshift(order); localStorage.setItem('sealy-orders', JSON.stringify(orders));
     }
-    status.textContent = 'Order received. We will review your receipt shortly — check your latest pending order anytime using your Roblox username.';
-    feedbackRating = 0; $('#feedback-form').reset(); $('#feedback-status').textContent = ''; document.querySelectorAll('[data-rating]').forEach((star) => star.classList.remove('selected')); $('#feedback-form').dataset.orderCode = orderCode; $('#review-dialog').showModal(); event.target.reset(); foundProfile = null; $('#profile-preview').hidden = true;
+    status.textContent = 'Order successfully sent! We will review your receipt shortly.';
+    event.target.reset(); foundProfile = null; $('#profile-preview').hidden = true;
+    window.setTimeout(() => { feedbackRating = 0; $('#feedback-form').reset(); $('#feedback-status').textContent = ''; document.querySelectorAll('[data-rating]').forEach((star) => star.classList.remove('selected')); $('#feedback-form').dataset.orderCode = orderCode; $('#review-dialog').showModal(); }, 1600);
   } catch (error) { status.textContent = `We could not submit the order: ${error.message}. Please try again.`; }
 }
 

@@ -7,6 +7,9 @@ const defaults = Array.from({ length: 10 }, (_, i) => ({
   stock: 10,
 }));
 let fb;
+let stopLiveOrders;
+let stopLiveFeedback;
+let refreshTimer;
 async function setup() {
   if (!firebaseConfig.apiKey) return;
   const [{ initializeApp }, fs, auth, storage] = await Promise.all([
@@ -32,7 +35,7 @@ function draw(orders, items, feedback) {
     ? orders
         .map(
           (o) =>
-            `<article class="row"><div><b>${o.code}</b><span>@${o.username} · ${o.amount}R · ${money(o.total)}</span></div><div><small>${o.whatsapp || ""}</small>${o.receiptPath ? `<a href="#" data-receipt="${o.receiptPath}">Open receipt</a>` : ""}</div><select data-status="${o.code}">${["Pending review", "Payment approved", "Processing", "Completed", "Rejected"].map((s) => `<option ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}</select><button class="delete-order" type="button" data-delete="${o.code}">Delete</button></article>`,
+            `<article class="row"><div><b>${o.code}</b><span>@${o.username} · ${o.amount}R · ${money(o.total)}</span></div><div><small>${o.whatsapp || ""}</small>${o.receiptChunkCount ? `<a href="#" data-receipt-chunks="${o.code}" data-receipt-name="${o.receiptName || 'receipt'}">Open receipt</a>` : o.receiptPath ? `<a href="#" data-receipt="${o.receiptPath}">Open receipt</a>` : `<small>Receipt uploading…</small>`}</div><select data-status="${o.code}">${["Pending review", "Payment approved", "Processing", "Completed", "Rejected"].map((s) => `<option ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}</select><button class="delete-order" type="button" data-delete="${o.code}">Delete</button></article>`,
         )
         .join("")
     : "<p>No orders yet.</p>";
@@ -61,7 +64,7 @@ async function load() {
     )
   ).docs.map((d) => d.data());
   const packages = (
-    await fb.fs.getDocs(fb.fs.collection(fb.db, "packages"))
+    await fb.fs.getDocs(fb.fs.query(fb.fs.collection(fb.db, "packages"), fb.fs.orderBy("amount", "asc")))
   ).docs.map((d) => d.data());
   const feedback = (
     await fb.fs.getDocs(
@@ -74,6 +77,13 @@ async function load() {
   draw(orders, packages.length ? packages : defaults, feedback);
   $("#locked").hidden = true;
   $("#dashboard").hidden = false;
+  $("#signout").hidden = false;
+}
+function startLiveUpdates() {
+  const refresh = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(() => load().catch(() => {}), 180); };
+  stopLiveOrders?.(); stopLiveFeedback?.();
+  stopLiveOrders = fb.fs.onSnapshot(fb.fs.collection(fb.db, "orders"), refresh);
+  stopLiveFeedback = fb.fs.onSnapshot(fb.fs.collection(fb.db, "feedback"), refresh);
 }
 $("#login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -96,14 +106,17 @@ $("#login-form").addEventListener("submit", async (e) => {
     if (!admin.exists())
       throw Error("This account is not approved as an admin.");
     await load();
+    startLiveUpdates();
   } catch (err) {
     $("#login-status").textContent = err.message;
   }
 });
 $("#signout").addEventListener("click", async () => {
   if (fb) await fb.authApi.signOut(fb.auth);
+  stopLiveOrders?.(); stopLiveFeedback?.(); stopLiveOrders = undefined; stopLiveFeedback = undefined;
   $("#dashboard").hidden = true;
   $("#locked").hidden = false;
+  $("#signout").hidden = true;
 });
 $("#save-order-status").addEventListener("click", async () => {
   const button = $("#save-order-status"); button.textContent = "Saving..."; button.disabled = true;
@@ -114,12 +127,28 @@ $("#order-list").addEventListener("click", async (e) => {
   if (orderCode && fb) {
     if (!window.confirm(`Delete order ${orderCode}? This cannot be undone.`)) return;
     try {
+      const chunks = await fb.fs.getDocs(fb.fs.collection(fb.db, "receipts", orderCode, "chunks"));
+      await Promise.all(chunks.docs.map((chunk) => fb.fs.deleteDoc(chunk.ref)));
       await fb.fs.deleteDoc(fb.fs.doc(fb.db, "orders", orderCode));
       await fb.fs.deleteDoc(fb.fs.doc(fb.db, "tracking", orderCode));
       await load();
     } catch {
       window.alert("Could not delete this order. Please try again.");
     }
+    return;
+  }
+  const receiptOrder = e.target.dataset.receiptChunks;
+  if (receiptOrder && fb) {
+    e.preventDefault();
+    const preview = window.open("", "_blank", "noopener");
+    try {
+      const chunks = (await fb.fs.getDocs(fb.fs.query(fb.fs.collection(fb.db, "receipts", receiptOrder, "chunks"), fb.fs.orderBy("index", "asc")))).docs.map((doc) => doc.data());
+      const base64 = chunks.map((chunk) => chunk.data).join("");
+      const binary = atob(base64); const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([bytes], { type: chunks[0]?.mime || "application/octet-stream" }));
+      if (preview) preview.location.href = url; else window.open(url, "_blank", "noopener");
+    } catch { if (preview) preview.close(); window.alert("Could not open this receipt. Please try again."); }
     return;
   }
   const path = e.target.dataset.receipt;

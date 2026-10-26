@@ -247,5 +247,5 @@ button {
 }
 
 /* Simplified owner workspace: no navigation rail. */
-.shell{display:block}.shell aside{display:none}main{max-width:1480px;margin:0 auto}.admin-actions{display:flex;gap:9px}.admin-actions #save-order-status{background:#6daeea}.admin-actions #signout{background:#dcecff;color:#315b86}
+.shell{display:block}.shell aside{display:none}main{max-width:1480px;margin:0 auto}.admin-actions{display:flex;gap:9px}.admin-actions #save-order-status{background:#6daeea}.top-signout{background:#dcecff;color:#315b86;align-self:flex-start}.top-signout:hover{background:#cfe5fa}
 .row{grid-template-columns:minmax(180px,1.5fr) minmax(150px,1fr) minmax(150px,.75fr) auto}.delete-order{border:1px solid #edb8c4;background:#fff4f6;color:#ad4960;border-radius:8px;padding:9px 12px;font:inherit;font-weight:700;cursor:pointer}.delete-order:hover{background:#ffe6ec}.review-row{grid-template-columns:minmax(220px,1fr) auto}.review-row .stars{display:block;color:#e0a437;font-size:1.15rem;letter-spacing:1px}.review-row small{color:var(--muted)}
