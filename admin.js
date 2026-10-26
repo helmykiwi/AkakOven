@@ -131,7 +131,7 @@ $("#signout").addEventListener("click", async () => {
 });
 $("#save-order-status").addEventListener("click", async () => {
   const button = $("#save-order-status"); button.textContent = "Saving..."; button.disabled = true;
-  try { for (const select of document.querySelectorAll("[data-status]")) { const id = select.dataset.status; await fb.fs.updateDoc(fb.fs.doc(fb.db, "orders", id), { status: select.value }); await fb.fs.updateDoc(fb.fs.doc(fb.db, "tracking", id), { status: select.value }); } button.textContent = "Saved"; setTimeout(() => { button.textContent = "Save order updates"; button.disabled = false; }, 1400); } catch { button.textContent = "Try again"; button.disabled = false; }
+  try { for (const select of document.querySelectorAll("[data-status]")) { const id = select.dataset.status; const changes = { status: select.value, statusUpdatedAt: fb.fs.serverTimestamp() }; await fb.fs.updateDoc(fb.fs.doc(fb.db, "orders", id), changes); await fb.fs.updateDoc(fb.fs.doc(fb.db, "tracking", id), changes); } button.textContent = "Saved"; setTimeout(() => { button.textContent = "Save order updates"; button.disabled = false; }, 1400); } catch { button.textContent = "Try again"; button.disabled = false; }
 });
 $("#order-list").addEventListener("click", async (e) => {
   const page = e.target.dataset.orderPage;

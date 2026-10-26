@@ -108,14 +108,28 @@ async function saveOrder(event) {
 }
 
 async function trackOrder(event) {
-  event.preventDefault(); const username = $('#tracking-code').value.trim().replace(/^@/, ''); const result = $('#tracking-result'); result.hidden = false; result.textContent = 'Finding your pending order...';
+  event.preventDefault(); const username = $('#tracking-code').value.trim().replace(/^@/, ''); const result = $('#tracking-result'); result.hidden = false; result.textContent = 'Finding your latest order...';
   try {
     let orders;
-    if (firebase) { const snap = await firebase.firestore.getDocs(firebase.firestore.query(firebase.firestore.collection(firebase.db, 'tracking'), firebase.firestore.where('username', '==', username), firebase.firestore.where('status', '==', 'Pending review'))); orders = snap.docs.map((doc) => doc.data()); }
-    else orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]').filter((item) => item.username.toLowerCase() === username.toLowerCase() && item.status === 'Pending review');
+    if (firebase) {
+      const tracking = firebase.firestore.collection(firebase.db, 'tracking');
+      const cutoff = firebase.firestore.Timestamp.fromMillis(Date.now() - 2 * 60 * 60 * 1000);
+      const [pending, recentlyUpdated] = await Promise.all([
+        firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('username', '==', username), firebase.firestore.where('status', '==', 'Pending review'))),
+        firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('username', '==', username), firebase.firestore.where('statusUpdatedAt', '>', cutoff)))
+      ]);
+      orders = [...pending.docs, ...recentlyUpdated.docs].reduce((unique, doc) => unique.some((item) => item.code === doc.id) ? unique : [...unique, doc.data()], []);
+    }
+    else orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]').filter((item) => item.username.toLowerCase() === username.toLowerCase() && (item.status === 'Pending review' || (item.statusUpdatedAt && Date.now() - new Date(item.statusUpdatedAt).getTime() < 2 * 60 * 60 * 1000)));
     if (!orders.length) throw new Error('not found');
     result.innerHTML = orders.map((order) => `<strong>${order.amount} Robux · ${money(Number(order.total))}</strong><br /><span class="status-chip">${order.status}</span>`).join('<hr>');
-  } catch { result.textContent = 'We could not find a pending order for that username yet.'; }
+  } catch { result.textContent = 'We could not find a recent order for that username yet.'; }
+}
+
+function renderPublicReviews(items) {
+  const list = $('#public-feedback');
+  if (!list) return;
+  list.innerHTML = items.length ? items.slice(0, 6).map((item) => `<article><div class="public-stars" aria-label="${Number(item.rating) || 0} out of 5 stars">${'★'.repeat(Number(item.rating) || 0)}${'☆'.repeat(5 - (Number(item.rating) || 0))}</div><p>${String(item.note || 'Great service!').replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' }[char]))}</p></article>`).join('') : '<p class="review-empty">Customer reviews will appear here.</p>';
 }
 
 function localAdmin() { return JSON.parse(localStorage.getItem('sealy-orders') || '[]'); }
@@ -152,4 +166,4 @@ let feedbackRating = 0;
 $('#review-close').addEventListener('click', () => $('#review-dialog').close());
 document.querySelectorAll('[data-rating]').forEach((button) => button.addEventListener('click', () => { feedbackRating = Number(button.dataset.rating); document.querySelectorAll('[data-rating]').forEach((star) => star.classList.toggle('selected', Number(star.dataset.rating) <= feedbackRating)); }));
 $('#feedback-form').addEventListener('submit', async (event) => { event.preventDefault(); if (!feedbackRating) { $('#feedback-status').textContent = 'Choose a star rating first.'; return; } const payload = { orderCode: event.currentTarget.dataset.orderCode, rating: feedbackRating, note: $('#feedback-note').value.trim(), createdAt: new Date().toISOString() }; try { if (firebase) await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'feedback', `${payload.orderCode}-${Date.now()}`), payload); else localStorage.setItem(`sealy-feedback-${payload.orderCode}`, JSON.stringify(payload)); $('#feedback-status').textContent = 'Thank you for your feedback!'; setTimeout(() => $('#review-dialog').close(), 900); } catch { $('#feedback-status').textContent = 'Could not send feedback. Please try again.'; } });
-renderPackages(); setupFirebase().catch((error) => console.warn('Firebase is not configured:', error));
+renderPackages(); setupFirebase().then(() => { if (firebase) firebase.firestore.onSnapshot(firebase.firestore.query(firebase.firestore.collection(firebase.db, 'feedback'), firebase.firestore.orderBy('createdAt', 'desc')), (snapshot) => renderPublicReviews(snapshot.docs.map((doc) => doc.data())), () => renderPublicReviews([])); }).catch((error) => console.warn('Firebase is not configured:', error));

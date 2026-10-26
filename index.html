@@ -12,13 +12,13 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./redesign.css?v=pastel-blue-font-20261026" />
-    <link rel="stylesheet" href="./final-fixes.css?v=review-popup-20261026" />
+    <link rel="stylesheet" href="./final-fixes.css?v=reviews-status-20261026" />
   </head>
   <body>
     <header class="topbar">
       <a class="logo" href="#home">sealybloxshop</a>
       <nav>
-        <a href="#services">Services</a><a href="#tracking">Track order</a>
+        <a href="#services">Services</a><a href="#tracking">Track order</a><a href="#reviews">Reviews</a>
       </nav>
       <a class="top-cta" href="#order">Order Robux</a>
     </header>
@@ -291,7 +291,7 @@
       <section id="tracking" class="tracking">
         <div>
           <p class="eyebrow">CHECK YOUR ORDER</p>
-          <h2>Order updates, one code away.</h2>
+          <h2>Your latest order, one search away.</h2>
           <p>Enter your Roblox username to see your latest pending order.</p>
         </div>
         <form id="tracking-form">
@@ -319,6 +319,13 @@
           </form>
         </dialog>
       </section>
+      <section id="reviews" class="public-reviews">
+        <div>
+          <h2>Kind words from our customers.</h2>
+          <p>Every review comes from a Sealy Blox Shop order.</p>
+        </div>
+        <div id="public-feedback" class="public-feedback" aria-live="polite"></div>
+      </section>
     </main>
     <footer>
       <a class="logo" href="#home">sealybloxshop</a>
@@ -338,6 +345,6 @@
         });
     </script>
     <script src="./firebase-runtime-config.js"></script>
-    <script type="module" src="./app.js?v=stock-receipts-20261026"></script>
+    <script type="module" src="./app.js?v=reviews-status-20261026"></script>
   </body>
 </html>

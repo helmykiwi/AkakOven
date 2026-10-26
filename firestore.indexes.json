@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "tracking",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "username", "order": "ASCENDING" },
+        { "fieldPath": "statusUpdatedAt", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
