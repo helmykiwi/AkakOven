@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./redesign.css" />
@@ -210,8 +210,16 @@
               >
                 <b>1000R</b><small>RM38.50</small>
               </button>
+              <button class="order-package-option other-package" type="button" role="radio" aria-checked="false" data-order-package="other">
+                <b>Other amount</b><small>100–5000R</small>
+              </button>
             </div>
             <input id="package-select" name="package" type="hidden" value="" />
+            <div class="custom-amount" id="custom-amount" hidden>
+              <label for="custom-robux">Choose Robux amount</label>
+              <div><input id="custom-robux" type="number" min="100" max="5000" step="1" inputmode="numeric" placeholder="e.g. 1250" /><output id="custom-price">RM0.00</output></div>
+              <small>Minimum 100R · maximum 5000R · RM3.85 per 100 Robux</small>
+            </div>
           </div>
           <div class="pay-card">
             <div>
@@ -299,6 +307,14 @@
           </div>
         </form>
         <div id="tracking-result" class="tracking-result" hidden></div>
+        <form id="feedback-form" class="feedback-form" hidden>
+          <p>Order complete — how was your experience?</p>
+          <div class="rating" role="radiogroup" aria-label="Rate your order">
+            <button type="button" data-rating="1" aria-label="1 star">★</button><button type="button" data-rating="2" aria-label="2 stars">★</button><button type="button" data-rating="3" aria-label="3 stars">★</button><button type="button" data-rating="4" aria-label="4 stars">★</button><button type="button" data-rating="5" aria-label="5 stars">★</button>
+          </div>
+          <textarea id="feedback-note" rows="2" placeholder="Optional feedback for Sealy Blox Shop"></textarea>
+          <button class="button ghost" type="submit">Send feedback</button><span id="feedback-status" role="status"></span>
+        </form>
       </section>
     </main>
     <footer>
@@ -309,24 +325,6 @@
       </p>
     </footer>
     <script>
-      document
-        .querySelectorAll("[data-order-package]")
-        .forEach(function (button) {
-          button.addEventListener("click", function () {
-            var amount = button.querySelector("small").textContent;
-            document
-              .querySelectorAll("[data-order-package]")
-              .forEach(function (item) {
-                item.classList.remove("selected");
-                item.setAttribute("aria-checked", "false");
-              });
-            button.classList.add("selected");
-            button.setAttribute("aria-checked", "true");
-            document.querySelector("#package-select").value =
-              button.dataset.orderPackage;
-            document.querySelector("#order-total").textContent = amount;
-          });
-        });
       document.querySelector("#qr-open").addEventListener("click", function () {
         document.querySelector("#qr-dialog").showModal();
       });

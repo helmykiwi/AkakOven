@@ -10,18 +10,25 @@ const profileLookupEndpoint = 'https://tfpovaymjiopqxgwibck.supabase.co/function
 const $ = (selector) => document.querySelector(selector);
 const money = (amount) => `RM${amount.toFixed(2)}`;
 const selectedPackage = () => activePackages.find((item) => item.id === selectedId) || null;
+const customPackage = () => {
+  const amount = Number($('#custom-robux')?.value || 0);
+  return selectedId === 'other' && amount >= 100 && amount <= 5000 ? { id: 'other', amount, price: Number((amount * 3.85 / 100).toFixed(2)), stock: 1 } : null;
+};
 const code = () => `SB-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
 function renderPackages() {
   const storefrontGrid = $('#package-grid'); if (storefrontGrid) storefrontGrid.innerHTML = activePackages.map((item) => `<button class="package-card ${item.id === selectedId ? 'selected' : ''}" type="button" data-package="${item.id}" ${item.stock < 1 ? 'disabled' : ''}><b>${item.amount}R</b><span>${money(item.price)}</span><small>${item.stock > 0 ? `${item.stock} in stock` : 'Sold out'}</small></button>`).join('');
-  $('#order-package-grid').innerHTML = activePackages.map((item) => `<button class="order-package-option ${item.id === selectedId ? 'selected' : ''}" type="button" role="radio" aria-checked="${item.id === selectedId}" data-order-package="${item.id}" ${item.stock < 1 ? 'disabled' : ''}><b>${item.amount}R</b><small>${money(item.price)}</small></button>`).join('');
+  const other = `<button class="order-package-option other-package ${selectedId === 'other' ? 'selected' : ''}" type="button" role="radio" aria-checked="${selectedId === 'other'}" data-order-package="other"><b>Other amount</b><small>100–5000R</small></button>`;
+  $('#order-package-grid').innerHTML = activePackages.map((item) => `<button class="order-package-option ${item.id === selectedId ? 'selected' : ''}" type="button" role="radio" aria-checked="${item.id === selectedId}" data-order-package="${item.id}" ${item.stock < 1 ? 'disabled' : ''}><b>${item.amount}R</b><small>${money(item.price)}</small></button>`).join('') + other;
   updateTotal();
 }
 
 function updateTotal() {
-  const item = selectedPackage();
+  const item = selectedPackage() || customPackage();
   $('#order-total').textContent = item ? money(item.price) : '';
   $('#package-select').value = item?.id || '';
+  $('#custom-amount').hidden = selectedId !== 'other';
+  if (selectedId === 'other') $('#custom-price').textContent = item ? money(item.price) : 'RM0.00';
 }
 
 async function setupFirebase() {
@@ -55,7 +62,7 @@ async function findProfile() {
 
 async function saveOrder(event) {
   event.preventDefault();
-  const status = $('#order-status'); const item = selectedPackage(); const receipt = $('#receipt').files[0];
+  const status = $('#order-status'); const item = selectedPackage() || customPackage(); const receipt = $('#receipt').files[0];
   if (!item) { status.textContent = 'Choose a Robux package before submitting.'; return; }
   if (!foundProfile) { status.textContent = 'Find and verify the Roblox profile before submitting.'; return; }
   if (!receipt) { status.textContent = 'Please upload your payment receipt.'; return; }
@@ -85,6 +92,7 @@ async function trackOrder(event) {
     else order = JSON.parse(localStorage.getItem('sealy-orders') || '[]').find((item) => item.code === orderCode);
     if (!order) throw new Error('not found');
     result.innerHTML = `<strong>${order.code}</strong> · ${order.amount} Robux · ${money(Number(order.total))}<br /><span class="status-chip">${order.status}</span>`;
+    const feedback = $('#feedback-form'); feedback.hidden = order.status !== 'Completed'; feedback.dataset.orderCode = order.code;
   } catch { result.textContent = 'We could not find that order code. Check it and try again.'; }
 }
 
@@ -110,6 +118,7 @@ async function saveAdminChanges() {
 
 $('#package-grid')?.addEventListener('click', (event) => { const id = event.target.closest('[data-package]')?.dataset.package; if (id) { selectedId = id; renderPackages(); } });
 $('#order-package-grid').addEventListener('click', (event) => { const id = event.target.closest('[data-order-package]')?.dataset.orderPackage; if (id) { selectedId = id; renderPackages(); } });
+$('#custom-robux').addEventListener('input', updateTotal);
 let lookupTimer;
 $('#roblox-username').addEventListener('input', () => { clearTimeout(lookupTimer); $('#profile-preview').hidden = true; foundProfile = null; const username = $('#roblox-username').value.trim(); if (username.length < 3) { $('#profile-help').textContent = 'Type a username and we will find the account automatically.'; return; } lookupTimer = setTimeout(findProfile, 550); });
 $('#receipt').addEventListener('change', (event) => { $('#receipt-name').textContent = event.target.files[0]?.name || 'Choose file'; });
@@ -117,4 +126,7 @@ $('#lookup-button').addEventListener('click', findProfile); $('#order-form').add
 $('#admin-login-button')?.addEventListener('click', loginAdmin); $('#save-stock')?.addEventListener('click', saveAdminChanges);
 $('#admin-signout')?.addEventListener('click', async () => { if (firebase) await firebase.authApi.signOut(firebase.auth); $('#admin-panel').hidden = true; $('#admin-login').hidden = false; });
 $('#orders-admin')?.addEventListener('click', async (event) => { const path = event.target.dataset.receipt; if (!path || !firebase) return; event.preventDefault(); const url = await firebase.storageApi.getDownloadURL(firebase.storageApi.ref(firebase.store, path)); window.open(url, '_blank', 'noopener'); });
+let feedbackRating = 0;
+document.querySelectorAll('[data-rating]').forEach((button) => button.addEventListener('click', () => { feedbackRating = Number(button.dataset.rating); document.querySelectorAll('[data-rating]').forEach((star) => star.classList.toggle('selected', Number(star.dataset.rating) <= feedbackRating)); }));
+$('#feedback-form').addEventListener('submit', async (event) => { event.preventDefault(); if (!feedbackRating) { $('#feedback-status').textContent = 'Choose a star rating first.'; return; } const payload = { orderCode: event.currentTarget.dataset.orderCode, rating: feedbackRating, note: $('#feedback-note').value.trim(), createdAt: new Date().toISOString() }; try { if (firebase) await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'feedback', `${payload.orderCode}-${Date.now()}`), payload); else localStorage.setItem(`sealy-feedback-${payload.orderCode}`, JSON.stringify(payload)); $('#feedback-status').textContent = 'Thank you for your feedback!'; event.currentTarget.querySelector('button[type="submit"]').disabled = true; } catch { $('#feedback-status').textContent = 'Could not send feedback. Please try again.'; } });
 renderPackages(); setupFirebase().catch((error) => console.warn('Firebase is not configured:', error));

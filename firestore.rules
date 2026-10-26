@@ -9,5 +9,6 @@ service cloud.firestore {
       allow create: if request.auth.uid == adminId && request.auth.token.email == 'bettygrv3@gmail.com';
       allow update, delete: if false;
     }
+    match /feedback/{feedbackId} { allow create: if request.resource.data.keys().hasAll(['orderCode','rating','createdAt']); allow read: if isAdmin(); }
   }
 }
