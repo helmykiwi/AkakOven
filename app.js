@@ -36,8 +36,8 @@ async function uploadReceipt(orderCode, file) {
 
 function sendNewOrderEmail(order) {
   const { serviceId, templateId, publicKey } = emailConfig;
-  if (!serviceId || !templateId || !publicKey || !window.emailjs) return;
-  window.emailjs.send(serviceId, templateId, {
+  if (!serviceId || !templateId || !publicKey || !window.emailjs) return Promise.reject(new Error('Email alerts are not configured.'));
+  return window.emailjs.send(serviceId, templateId, {
     email: 'sealyblox@gmail.com',
     order_code: order.code,
     roblox_username: order.username,
@@ -45,7 +45,7 @@ function sendNewOrderEmail(order) {
     total_payment: Number(order.total).toFixed(2),
     whatsapp_number: order.whatsapp || 'Not provided',
     order_note: order.note || 'No note'
-  }, { publicKey }).catch((error) => console.warn('New-order email could not be sent:', error));
+  }, { publicKey });
 }
 
 function renderPackages() {
@@ -125,8 +125,14 @@ async function saveOrder(event) {
       await uploadReceipt(orderCode, receipt);
     }
     rememberRecentOrder({ code: order.code, username: order.username, usernameLower: order.username.toLowerCase(), amount: order.amount, total: order.total, status: order.status, createdAt: order.createdAt, confirmed: true });
-    sendNewOrderEmail(order);
     status.textContent = 'Order successfully sent! We will review your receipt shortly.';
+    sendNewOrderEmail(order).then(() => {
+      if (status.textContent.startsWith('Order successfully sent')) status.textContent = 'Order successfully sent! Admin notified by email.';
+    }).catch((error) => {
+      console.warn('New-order email could not be sent:', error);
+      const reason = error?.text || error?.message || 'Email provider rejected the request.';
+      if (status.textContent.startsWith('Order successfully sent')) status.textContent = `Order saved, but admin email was not sent: ${reason}`;
+    });
     event.target.reset(); foundProfile = null; $('#profile-preview').hidden = true;
     window.setTimeout(() => { feedbackRating = 0; $('#feedback-form').reset(); $('#feedback-status').textContent = ''; document.querySelectorAll('[data-rating]').forEach((star) => star.classList.remove('selected')); $('#feedback-form').dataset.orderCode = orderCode; $('#review-dialog').showModal(); }, 1600);
   } catch (error) { status.textContent = `We could not submit the order: ${error.message}. Please try again.`; }
