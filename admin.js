@@ -1,8 +1,112 @@
-import { firebaseConfig } from './firebase-config.js';
-const $=(s)=>document.querySelector(s), money=(n)=>`RM${Number(n).toFixed(2)}`;
-const defaults=Array.from({length:10},(_,i)=>({id:`r${(i+1)*100}`,amount:(i+1)*100,stock:10})); let fb;
-async function setup(){if(!firebaseConfig.apiKey)return;const [{initializeApp},fs,auth,storage]=await Promise.all([import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js'),import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'),import('https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js')]);const app=initializeApp(firebaseConfig);fb={db:fs.getFirestore(app),fs,auth:auth.getAuth(app),authApi:auth,store:storage.getStorage(app),storeApi:storage};}
-function draw(orders,items){$('#stats').innerHTML=`<div class="stat"><b>${orders.length}</b><span>Total orders</span></div><div class="stat"><b>${orders.filter(o=>o.status==='Pending review').length}</b><span>Need review</span></div><div class="stat"><b>${money(orders.reduce((x,o)=>x+Number(o.total||0),0))}</b><span>Order value</span></div>`;$('#order-list').innerHTML=orders.length?orders.map(o=>`<article class="row"><div><b>${o.code}</b><span>@${o.username} · ${o.amount}R · ${money(o.total)}</span></div><div><small>${o.whatsapp||''}</small>${o.receiptPath?`<a href="#" data-receipt="${o.receiptPath}">Open receipt</a>`:''}</div><select data-status="${o.code}">${['Pending review','Payment approved','Processing','Completed','Rejected'].map(s=>`<option ${o.status===s?'selected':''}>${s}</option>`).join('')}</select></article>`).join(''):'<p>No orders yet.</p>';$('#stock-list').innerHTML=items.map(x=>`<label>${x.amount}R<input data-stock="${x.id}" value="${x.stock}" type="number" min="0"></label>`).join('');}
-async function load(){const orders=(await fb.fs.getDocs(fb.fs.query(fb.fs.collection(fb.db,'orders'),fb.fs.orderBy('createdAt','desc')))).docs.map(d=>d.data());const packages=(await fb.fs.getDocs(fb.fs.collection(fb.db,'packages'))).docs.map(d=>d.data());draw(orders,packages.length?packages:defaults);$('#locked').hidden=true;$('#dashboard').hidden=false;}
-$('#login-form').addEventListener('submit',async(e)=>{e.preventDefault();if(!fb){$('#login-status').textContent='Firebase is not connected yet.';return}try{const email=$('#admin-email').value.trim(),password=$('#admin-password').value;const user=(await fb.authApi.signInWithEmailAndPassword(fb.auth,email,password)).user;const admin=await fb.fs.getDoc(fb.fs.doc(fb.db,'admins',user.uid));if(!admin.exists())throw Error('This account is not approved as an admin.');await load()}catch(err){$('#login-status').textContent=err.message}});
-$('#signout').addEventListener('click',async()=>{if(fb)await fb.authApi.signOut(fb.auth);$('#dashboard').hidden=true;$('#locked').hidden=false});$('#order-list').addEventListener('click',async(e)=>{const path=e.target.dataset.receipt;if(!path||!fb)return;e.preventDefault();window.open(await fb.storeApi.getDownloadURL(fb.storeApi.ref(fb.store,path)),'_blank','noopener')});$('#save-stock').addEventListener('click',async()=>{if(!fb)return;for(const input of document.querySelectorAll('[data-stock]'))await fb.fs.setDoc(fb.fs.doc(fb.db,'packages',input.dataset.stock),{id:input.dataset.stock,amount:Number(input.dataset.stock.slice(1)),stock:Number(input.value)});await load()});setup();
+import { firebaseConfig } from "./firebase-config.js";
+const $ = (s) => document.querySelector(s),
+  money = (n) => `RM${Number(n).toFixed(2)}`;
+const defaults = Array.from({ length: 10 }, (_, i) => ({
+  id: `r${(i + 1) * 100}`,
+  amount: (i + 1) * 100,
+  stock: 10,
+}));
+let fb;
+async function setup() {
+  if (!firebaseConfig.apiKey) return;
+  const [{ initializeApp }, fs, auth, storage] = await Promise.all([
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js"),
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js"),
+    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js"),
+  ]);
+  const app = initializeApp(firebaseConfig);
+  fb = {
+    db: fs.getFirestore(app),
+    fs,
+    auth: auth.getAuth(app),
+    authApi: auth,
+    store: storage.getStorage(app),
+    storeApi: storage,
+  };
+}
+function draw(orders, items) {
+  $("#stats").innerHTML =
+    `<div class="stat"><b>${orders.length}</b><span>Total orders</span></div><div class="stat"><b>${orders.filter((o) => o.status === "Pending review").length}</b><span>Need review</span></div><div class="stat"><b>${money(orders.reduce((x, o) => x + Number(o.total || 0), 0))}</b><span>Order value</span></div>`;
+  $("#order-list").innerHTML = orders.length
+    ? orders
+        .map(
+          (o) =>
+            `<article class="row"><div><b>${o.code}</b><span>@${o.username} · ${o.amount}R · ${money(o.total)}</span></div><div><small>${o.whatsapp || ""}</small>${o.receiptPath ? `<a href="#" data-receipt="${o.receiptPath}">Open receipt</a>` : ""}</div><select data-status="${o.code}">${["Pending review", "Payment approved", "Processing", "Completed", "Rejected"].map((s) => `<option ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}</select></article>`,
+        )
+        .join("")
+    : "<p>No orders yet.</p>";
+  $("#stock-list").innerHTML = items
+    .map(
+      (x) =>
+        `<label>${x.amount}R<input data-stock="${x.id}" value="${x.stock}" type="number" min="0"></label>`,
+    )
+    .join("");
+}
+async function load() {
+  const orders = (
+    await fb.fs.getDocs(
+      fb.fs.query(
+        fb.fs.collection(fb.db, "orders"),
+        fb.fs.orderBy("createdAt", "desc"),
+      ),
+    )
+  ).docs.map((d) => d.data());
+  const packages = (
+    await fb.fs.getDocs(fb.fs.collection(fb.db, "packages"))
+  ).docs.map((d) => d.data());
+  draw(orders, packages.length ? packages : defaults);
+  $("#locked").hidden = true;
+  $("#dashboard").hidden = false;
+}
+$("#login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!fb) {
+    $("#login-status").textContent = "Firebase is not connected yet.";
+    return;
+  }
+  try {
+    const email = $("#admin-email").value.trim(),
+      password = $("#admin-password").value;
+    const user = (
+      await fb.authApi.signInWithEmailAndPassword(fb.auth, email, password)
+    ).user;
+    const adminRef = fb.fs.doc(fb.db, "admins", user.uid);
+    let admin = await fb.fs.getDoc(adminRef);
+    if (!admin.exists() && user.email === "bettygrv3@gmail.com") {
+      await fb.fs.setDoc(adminRef, { email: user.email, role: "admin" });
+      admin = await fb.fs.getDoc(adminRef);
+    }
+    if (!admin.exists())
+      throw Error("This account is not approved as an admin.");
+    await load();
+  } catch (err) {
+    $("#login-status").textContent = err.message;
+  }
+});
+$("#signout").addEventListener("click", async () => {
+  if (fb) await fb.authApi.signOut(fb.auth);
+  $("#dashboard").hidden = true;
+  $("#locked").hidden = false;
+});
+$("#order-list").addEventListener("click", async (e) => {
+  const path = e.target.dataset.receipt;
+  if (!path || !fb) return;
+  e.preventDefault();
+  window.open(
+    await fb.storeApi.getDownloadURL(fb.storeApi.ref(fb.store, path)),
+    "_blank",
+    "noopener",
+  );
+});
+$("#save-stock").addEventListener("click", async () => {
+  if (!fb) return;
+  for (const input of document.querySelectorAll("[data-stock]"))
+    await fb.fs.setDoc(fb.fs.doc(fb.db, "packages", input.dataset.stock), {
+      id: input.dataset.stock,
+      amount: Number(input.dataset.stock.slice(1)),
+      stock: Number(input.value),
+    });
+  await load();
+});
+setup();
