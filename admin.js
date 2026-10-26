@@ -13,6 +13,7 @@ let refreshTimer;
 let orderPage = 0;
 let feedbackPage = 0;
 const pageSize = 5;
+let loadedOrders = [];
 async function setup() {
   if (!firebaseConfig.apiKey) return;
   const [{ initializeApp }, fs, auth, storage] = await Promise.all([
@@ -74,6 +75,7 @@ async function load() {
       ),
     )
   ).docs.map((d) => ({ id: d.id, ...d.data() }));
+  loadedOrders = orders;
   const packages = (
     await fb.fs.getDocs(fb.fs.query(fb.fs.collection(fb.db, "packages"), fb.fs.orderBy("amount", "asc")))
   ).docs.map((d) => d.data());
@@ -150,7 +152,16 @@ $("#signout").addEventListener("click", async () => {
 });
 $("#save-order-status").addEventListener("click", async () => {
   const button = $("#save-order-status"); button.textContent = "Saving..."; button.disabled = true;
-  try { for (const select of document.querySelectorAll("[data-status]")) { const id = select.dataset.status; const changes = { status: select.value, statusUpdatedAt: fb.fs.serverTimestamp() }; await fb.fs.updateDoc(fb.fs.doc(fb.db, "orders", id), changes); await fb.fs.updateDoc(fb.fs.doc(fb.db, "tracking", id), changes); } button.textContent = "Saved"; setTimeout(() => { button.textContent = "Save order updates"; button.disabled = false; }, 1400); } catch { button.textContent = "Try again"; button.disabled = false; }
+  try { for (const select of document.querySelectorAll("[data-status]")) {
+    const id = select.dataset.status; const order = loadedOrders.find((item) => item.code === id);
+    if (!order) throw new Error("Order data is unavailable");
+    const changes = { status: select.value, statusUpdatedAt: fb.fs.serverTimestamp() };
+    await fb.fs.updateDoc(fb.fs.doc(fb.db, "orders", id), changes);
+    await fb.fs.setDoc(fb.fs.doc(fb.db, "tracking", id), {
+      code: order.code, username: order.username, usernameLower: String(order.username || "").toLowerCase(), packageId: order.packageId,
+      amount: order.amount, total: order.total, createdAt: order.createdAt, ...changes
+    }, { merge: true });
+  } button.textContent = "Saved"; setTimeout(() => { button.textContent = "Save order updates"; button.disabled = false; }, 1400); } catch { button.textContent = "Try again"; button.disabled = false; }
 });
 $("#order-list").addEventListener("click", async (e) => {
   const page = e.target.dataset.orderPage;
