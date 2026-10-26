@@ -43,14 +43,12 @@ async function findProfile() {
   if (!username) { help.textContent = 'Enter a Roblox username first.'; return; }
   help.textContent = 'Looking for this profile...';
   try {
-    const res = await fetch('https://users.roblox.com/v1/usernames/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usernames: [username], excludeBannedUsers: true }) });
-    const data = await res.json();
-    if (!data.data?.[0]) throw new Error('not found');
-    const user = data.data[0];
-    const thumb = await fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${user.id}&size=150x150&format=Png&isCircular=false`).then((response) => response.json());
-    foundProfile = { id: user.id, name: user.displayName, username: user.name, avatar: thumb.data?.[0]?.imageUrl || '' };
+    const res = await fetch(`/api/roblox-profile?username=${encodeURIComponent(username)}`);
+    const user = await res.json();
+    if (!res.ok) throw new Error(user.error || 'not found');
+    foundProfile = { id: user.id, name: user.displayName, username: user.username, avatar: user.avatar || '' };
     $('#profile-avatar').src = foundProfile.avatar; $('#profile-avatar').alt = `${foundProfile.name}'s Roblox avatar`;
-    $('#profile-name').textContent = foundProfile.name; $('#profile-handle').textContent = `@${foundProfile.username}`; $('#profile-link').href = `https://www.roblox.com/users/${foundProfile.id}/profile`; $('#profile-preview').hidden = false; help.textContent = 'This is the account that will receive Robux.';
+    $('#profile-name').textContent = foundProfile.name; $('#profile-handle').textContent = `@${foundProfile.username}`; $('#profile-link').href = user.profileUrl; $('#profile-preview').hidden = false; help.textContent = 'This is the account that will receive Robux.';
   } catch { foundProfile = null; $('#profile-preview').hidden = true; help.textContent = 'We could not find that username. Check the spelling and try again.'; }
 }
 
