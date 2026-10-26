@@ -12,7 +12,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./redesign.css?v=pastel-blue-font-20261026" />
-    <link rel="stylesheet" href="./final-fixes.css?v=pastel-blue-font-20261026" />
+    <link rel="stylesheet" href="./final-fixes.css?v=review-popup-20261026" />
   </head>
   <body>
     <header class="topbar">
@@ -306,14 +306,18 @@
           </div>
         </form>
         <div id="tracking-result" class="tracking-result" hidden></div>
-        <form id="feedback-form" class="feedback-form" hidden>
-          <p>Order complete — how was your experience?</p>
+        <dialog class="review-dialog" id="review-dialog">
+          <form id="feedback-form" class="feedback-form">
+          <button class="review-close" type="button" id="review-close" aria-label="Close review">×</button>
+          <p>How was your order experience?</p>
+          <small>Your feedback helps Sealy Blox Shop grow.</small>
           <div class="rating" role="radiogroup" aria-label="Rate your order">
             <button type="button" data-rating="1" aria-label="1 star">★</button><button type="button" data-rating="2" aria-label="2 stars">★</button><button type="button" data-rating="3" aria-label="3 stars">★</button><button type="button" data-rating="4" aria-label="4 stars">★</button><button type="button" data-rating="5" aria-label="5 stars">★</button>
           </div>
           <textarea id="feedback-note" rows="2" placeholder="Optional feedback for Sealy Blox Shop"></textarea>
           <button class="button ghost" type="submit">Send feedback</button><span id="feedback-status" role="status"></span>
-        </form>
+          </form>
+        </dialog>
       </section>
     </main>
     <footer>
@@ -334,6 +338,6 @@
         });
     </script>
     <script src="./firebase-runtime-config.js"></script>
-    <script type="module" src="./app.js?v=rating-after-order-20261026"></script>
+    <script type="module" src="./app.js?v=review-popup-20261026"></script>
   </body>
 </html>

@@ -25,17 +25,25 @@ async function setup() {
     storeApi: storage,
   };
 }
-function draw(orders, items) {
+function draw(orders, items, feedback) {
   $("#stats").innerHTML =
     `<div class="stat"><b>${orders.length}</b><span>Total orders</span></div><div class="stat"><b>${orders.filter((o) => o.status === "Pending review").length}</b><span>Need review</span></div><div class="stat"><b>${money(orders.reduce((x, o) => x + Number(o.total || 0), 0))}</b><span>Order value</span></div>`;
   $("#order-list").innerHTML = orders.length
     ? orders
         .map(
           (o) =>
-            `<article class="row"><div><b>${o.code}</b><span>@${o.username} · ${o.amount}R · ${money(o.total)}</span></div><div><small>${o.whatsapp || ""}</small>${o.receiptPath ? `<a href="#" data-receipt="${o.receiptPath}">Open receipt</a>` : ""}</div><select data-status="${o.code}">${["Pending review", "Payment approved", "Processing", "Completed", "Rejected"].map((s) => `<option ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}</select></article>`,
+            `<article class="row"><div><b>${o.code}</b><span>@${o.username} · ${o.amount}R · ${money(o.total)}</span></div><div><small>${o.whatsapp || ""}</small>${o.receiptPath ? `<a href="#" data-receipt="${o.receiptPath}">Open receipt</a>` : ""}</div><select data-status="${o.code}">${["Pending review", "Payment approved", "Processing", "Completed", "Rejected"].map((s) => `<option ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}</select><button class="delete-order" type="button" data-delete="${o.code}">Delete</button></article>`,
         )
         .join("")
     : "<p>No orders yet.</p>";
+  $("#feedback-list").innerHTML = feedback.length
+    ? feedback
+        .map(
+          (item) =>
+            `<article class="row review-row"><div><b class="stars" aria-label="${item.rating} out of 5 stars">${"★".repeat(Number(item.rating) || 0)}${"☆".repeat(5 - (Number(item.rating) || 0))}</b><span>${item.note || "No written feedback"}</span></div><small>${item.orderCode || ""} · ${item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}</small></article>`,
+        )
+        .join("")
+    : "<p>No ratings yet.</p>";
   $("#stock-list").innerHTML = items
     .map(
       (x) =>
@@ -55,7 +63,15 @@ async function load() {
   const packages = (
     await fb.fs.getDocs(fb.fs.collection(fb.db, "packages"))
   ).docs.map((d) => d.data());
-  draw(orders, packages.length ? packages : defaults);
+  const feedback = (
+    await fb.fs.getDocs(
+      fb.fs.query(
+        fb.fs.collection(fb.db, "feedback"),
+        fb.fs.orderBy("createdAt", "desc"),
+      ),
+    )
+  ).docs.map((d) => d.data());
+  draw(orders, packages.length ? packages : defaults, feedback);
   $("#locked").hidden = true;
   $("#dashboard").hidden = false;
 }
@@ -94,6 +110,18 @@ $("#save-order-status").addEventListener("click", async () => {
   try { for (const select of document.querySelectorAll("[data-status]")) { const id = select.dataset.status; await fb.fs.updateDoc(fb.fs.doc(fb.db, "orders", id), { status: select.value }); await fb.fs.updateDoc(fb.fs.doc(fb.db, "tracking", id), { status: select.value }); } button.textContent = "Saved"; setTimeout(() => { button.textContent = "Save order updates"; button.disabled = false; }, 1400); } catch { button.textContent = "Try again"; button.disabled = false; }
 });
 $("#order-list").addEventListener("click", async (e) => {
+  const orderCode = e.target.dataset.delete;
+  if (orderCode && fb) {
+    if (!window.confirm(`Delete order ${orderCode}? This cannot be undone.`)) return;
+    try {
+      await fb.fs.deleteDoc(fb.fs.doc(fb.db, "orders", orderCode));
+      await fb.fs.deleteDoc(fb.fs.doc(fb.db, "tracking", orderCode));
+      await load();
+    } catch {
+      window.alert("Could not delete this order. Please try again.");
+    }
+    return;
+  }
   const path = e.target.dataset.receipt;
   if (!path || !fb) return;
   e.preventDefault();

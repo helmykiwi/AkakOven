@@ -80,7 +80,7 @@ async function saveOrder(event) {
       const orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]'); orders.unshift(order); localStorage.setItem('sealy-orders', JSON.stringify(orders));
     }
     status.textContent = 'Order received. We will review your receipt shortly — check your latest pending order anytime using your Roblox username.';
-    $('#feedback-form').hidden = false; $('#feedback-form').dataset.orderCode = orderCode; event.target.reset(); foundProfile = null; $('#profile-preview').hidden = true;
+    feedbackRating = 0; $('#feedback-form').reset(); $('#feedback-status').textContent = ''; document.querySelectorAll('[data-rating]').forEach((star) => star.classList.remove('selected')); $('#feedback-form').dataset.orderCode = orderCode; $('#review-dialog').showModal(); event.target.reset(); foundProfile = null; $('#profile-preview').hidden = true;
   } catch (error) { status.textContent = `We could not submit the order: ${error.message}. Please try again.`; }
 }
 
@@ -92,8 +92,7 @@ async function trackOrder(event) {
     else orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]').filter((item) => item.username.toLowerCase() === username.toLowerCase() && item.status === 'Pending review');
     if (!orders.length) throw new Error('not found');
     result.innerHTML = orders.map((order) => `<strong>${order.amount} Robux · ${money(Number(order.total))}</strong><br /><span class="status-chip">${order.status}</span>`).join('<hr>');
-    $('#feedback-form').hidden = true;
-  } catch { result.textContent = 'We could not find that order code. Check it and try again.'; }
+  } catch { result.textContent = 'We could not find a pending order for that username yet.'; }
 }
 
 function localAdmin() { return JSON.parse(localStorage.getItem('sealy-orders') || '[]'); }
@@ -127,6 +126,7 @@ $('#admin-login-button')?.addEventListener('click', loginAdmin); $('#save-stock'
 $('#admin-signout')?.addEventListener('click', async () => { if (firebase) await firebase.authApi.signOut(firebase.auth); $('#admin-panel').hidden = true; $('#admin-login').hidden = false; });
 $('#orders-admin')?.addEventListener('click', async (event) => { const path = event.target.dataset.receipt; if (!path || !firebase) return; event.preventDefault(); const url = await firebase.storageApi.getDownloadURL(firebase.storageApi.ref(firebase.store, path)); window.open(url, '_blank', 'noopener'); });
 let feedbackRating = 0;
+$('#review-close').addEventListener('click', () => $('#review-dialog').close());
 document.querySelectorAll('[data-rating]').forEach((button) => button.addEventListener('click', () => { feedbackRating = Number(button.dataset.rating); document.querySelectorAll('[data-rating]').forEach((star) => star.classList.toggle('selected', Number(star.dataset.rating) <= feedbackRating)); }));
-$('#feedback-form').addEventListener('submit', async (event) => { event.preventDefault(); if (!feedbackRating) { $('#feedback-status').textContent = 'Choose a star rating first.'; return; } const payload = { orderCode: event.currentTarget.dataset.orderCode, rating: feedbackRating, note: $('#feedback-note').value.trim(), createdAt: new Date().toISOString() }; try { if (firebase) await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'feedback', `${payload.orderCode}-${Date.now()}`), payload); else localStorage.setItem(`sealy-feedback-${payload.orderCode}`, JSON.stringify(payload)); $('#feedback-status').textContent = 'Thank you for your feedback!'; event.currentTarget.querySelector('button[type="submit"]').disabled = true; } catch { $('#feedback-status').textContent = 'Could not send feedback. Please try again.'; } });
+$('#feedback-form').addEventListener('submit', async (event) => { event.preventDefault(); if (!feedbackRating) { $('#feedback-status').textContent = 'Choose a star rating first.'; return; } const payload = { orderCode: event.currentTarget.dataset.orderCode, rating: feedbackRating, note: $('#feedback-note').value.trim(), createdAt: new Date().toISOString() }; try { if (firebase) await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'feedback', `${payload.orderCode}-${Date.now()}`), payload); else localStorage.setItem(`sealy-feedback-${payload.orderCode}`, JSON.stringify(payload)); $('#feedback-status').textContent = 'Thank you for your feedback!'; setTimeout(() => $('#review-dialog').close(), 900); } catch { $('#feedback-status').textContent = 'Could not send feedback. Please try again.'; } });
 renderPackages(); setupFirebase().catch((error) => console.warn('Firebase is not configured:', error));
