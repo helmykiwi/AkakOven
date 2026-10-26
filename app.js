@@ -15,6 +15,12 @@ const customPackage = () => {
   return selectedId === 'other' && amount >= 100 && amount <= 5000 ? { id: 'other', amount, price: Number((amount * 3.85 / 100).toFixed(2)), stock: 1 } : null;
 };
 const code = () => `SB-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
+const recentOrderCache = () => JSON.parse(localStorage.getItem('sealy-recent-orders') || '[]');
+function rememberRecentOrder(order) {
+  const cutoff = Date.now() - 2 * 60 * 60 * 1000;
+  const next = [order, ...recentOrderCache().filter((item) => item.code !== order.code && new Date(item.createdAt).getTime() > cutoff)];
+  localStorage.setItem('sealy-recent-orders', JSON.stringify(next));
+}
 async function uploadReceipt(orderCode, file) {
   const dataUrl = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = reject; reader.readAsDataURL(file); });
   const base64 = String(dataUrl).split(',')[1] || '';
@@ -101,6 +107,7 @@ async function saveOrder(event) {
     } else {
       const orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]'); orders.unshift(order); localStorage.setItem('sealy-orders', JSON.stringify(orders));
     }
+    rememberRecentOrder({ code: order.code, username: order.username, usernameLower: order.username.toLowerCase(), amount: order.amount, total: order.total, status: order.status, createdAt: order.createdAt });
     status.textContent = 'Order successfully sent! We will review your receipt shortly.';
     event.target.reset(); foundProfile = null; $('#profile-preview').hidden = true;
     window.setTimeout(() => { feedbackRating = 0; $('#feedback-form').reset(); $('#feedback-status').textContent = ''; document.querySelectorAll('[data-rating]').forEach((star) => star.classList.remove('selected')); $('#feedback-form').dataset.orderCode = orderCode; $('#review-dialog').showModal(); }, 1600);
@@ -110,18 +117,23 @@ async function saveOrder(event) {
 async function trackOrder(event) {
   event.preventDefault(); const username = $('#tracking-code').value.trim().replace(/^@/, ''); const usernameLower = username.toLowerCase(); const result = $('#tracking-result'); result.hidden = false; result.textContent = 'Finding your latest order...';
   try {
-    let orders;
+    let orders = recentOrderCache().filter((item) => item.usernameLower === usernameLower && new Date(item.createdAt).getTime() > Date.now() - 2 * 60 * 60 * 1000);
     if (firebase) {
-      const tracking = firebase.firestore.collection(firebase.db, 'tracking');
-      const cutoff = firebase.firestore.Timestamp.fromMillis(Date.now() - 2 * 60 * 60 * 1000);
-      const [pending, recentlyUpdated, legacyPending] = await Promise.all([
-        firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('usernameLower', '==', usernameLower), firebase.firestore.where('status', '==', 'Pending review'))),
-        firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('usernameLower', '==', usernameLower), firebase.firestore.where('statusUpdatedAt', '>', cutoff))),
-        firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('username', '==', username), firebase.firestore.where('status', '==', 'Pending review')))
-      ]);
-      orders = [...pending.docs, ...recentlyUpdated.docs, ...legacyPending.docs].reduce((unique, doc) => unique.some((item) => item.code === doc.id) ? unique : [...unique, doc.data()], []);
+      try {
+        const tracking = firebase.firestore.collection(firebase.db, 'tracking');
+        const cutoff = firebase.firestore.Timestamp.fromMillis(Date.now() - 2 * 60 * 60 * 1000);
+        const [pending, recentlyUpdated, legacyPending] = await Promise.all([
+          firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('usernameLower', '==', usernameLower), firebase.firestore.where('status', '==', 'Pending review'))),
+          firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('usernameLower', '==', usernameLower), firebase.firestore.where('statusUpdatedAt', '>', cutoff))),
+          firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('username', '==', username), firebase.firestore.where('status', '==', 'Pending review')))
+        ]);
+        orders = [...orders, ...pending.docs, ...recentlyUpdated.docs, ...legacyPending.docs].reduce((unique, item) => {
+          const order = typeof item.data === 'function' ? item.data() : item;
+          return unique.some((saved) => saved.code === order.code) ? unique : [...unique, order];
+        }, []);
+      } catch { /* The just-submitted browser cache remains available while Firebase retries. */ }
     }
-    else orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]').filter((item) => item.username.toLowerCase() === username.toLowerCase() && (item.status === 'Pending review' || (item.statusUpdatedAt && Date.now() - new Date(item.statusUpdatedAt).getTime() < 2 * 60 * 60 * 1000)));
+    else orders = [...orders, ...JSON.parse(localStorage.getItem('sealy-orders') || '[]').filter((item) => item.username.toLowerCase() === username.toLowerCase() && (item.status === 'Pending review' || (item.statusUpdatedAt && Date.now() - new Date(item.statusUpdatedAt).getTime() < 2 * 60 * 60 * 1000)))].reduce((unique, order) => unique.some((saved) => saved.code === order.code) ? unique : [...unique, order], []);
     if (!orders.length) throw new Error('not found');
     result.innerHTML = orders.map((order) => `<strong>${order.amount} Robux · ${money(Number(order.total))}</strong><br /><span class="status-chip">${order.status}</span>`).join('<hr>');
   } catch { result.textContent = 'We could not find a recent order for that username yet.'; }
