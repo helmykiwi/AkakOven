@@ -4,6 +4,10 @@ service cloud.firestore {
     function isAdmin() { return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
     match /orders/{orderId} { allow create: if request.resource.data.keys().hasAll(['code','username','packageId','amount','total','status','createdAt']); allow read, update: if isAdmin(); }
     match /packages/{packageId} { allow read: if true; allow write: if isAdmin(); }
-    match /admins/{adminId} { allow read: if request.auth.uid == adminId; allow write: if false; }
+    match /admins/{adminId} {
+      allow read: if request.auth.uid == adminId;
+      allow create: if request.auth.uid == adminId && request.auth.token.email == 'bettygrv3@gmail.com';
+      allow update, delete: if false;
+    }
   }
 }
