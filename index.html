@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Patrick+Hand&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./style.css" />
+    <link rel="stylesheet" href="./enhancements.css" />
   </head>
   <body>
     <div class="site-shell">
@@ -51,13 +52,13 @@
         <section class="order-section" id="order">
           <div class="order-intro"><p class="mini-label">PLACE AN ORDER</p><h2>Your Roblox details, one clear checkout.</h2><p>Enter your username and we will show the profile we found before you submit.</p><div class="order-promise"><span>01</span><p><strong>Username only.</strong><br />Never share your Roblox password.</p></div><div class="order-promise"><span>02</span><p><strong>Keep your order code.</strong><br />Use it to follow progress anytime.</p></div></div>
           <form class="order-form" id="order-form">
-            <div class="form-row"><label for="roblox-username">Roblox username</label><div class="username-field"><span>@</span><input id="roblox-username" name="username" autocomplete="username" placeholder="e.g. SealyBlox" required /><button type="button" id="lookup-button">Find profile</button></div><p class="field-help" id="profile-help">Use the username, not display name.</p></div>
-            <div class="profile-preview" id="profile-preview" hidden><img id="profile-avatar" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="" /><div><strong id="profile-name"></strong><span id="profile-handle"></span></div><span class="verified">Profile found</span></div>
-            <div class="form-row"><label for="package-select">Package</label><select id="package-select" name="package" required></select></div>
+            <div class="form-row"><label for="roblox-username">Roblox username</label><div class="username-field"><span>@</span><input id="roblox-username" name="username" autocomplete="username" placeholder="e.g. spiderwibu" required /><button type="button" id="lookup-button">Find profile</button></div><p class="field-help" id="profile-help">Type a username and we will find the account automatically.</p></div>
+            <div class="profile-preview profile-ready" id="profile-preview" hidden><img id="profile-avatar" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="" /><div><strong id="profile-name"></strong><span id="profile-handle"></span><a id="profile-link" href="#" target="_blank" rel="noopener">Open Roblox profile ↗</a></div><span class="verified">Profile found</span></div>
+            <div class="form-row"><label>Choose a package</label><div class="order-package-grid" id="order-package-grid" role="radiogroup" aria-label="Robux package"></div><input id="package-select" name="package" type="hidden" value="r100" /></div>
             <div class="form-row"><label for="whatsapp">WhatsApp number</label><input id="whatsapp" name="whatsapp" inputmode="tel" placeholder="01X-XXXXXXX" required /></div>
             <div class="form-row"><label for="note">Order note <span>(optional)</span></label><textarea id="note" name="note" rows="3" placeholder="Any detail for your order"></textarea></div>
             <div class="payment-panel"><div><p class="mini-label">PAYMENT</p><h3>Pay with Touch ’n Go / DuitNow</h3><p>Scan the QR after creating your order, then upload the payment receipt below.</p></div><img src="./public/touchngo-qr.png" alt="DuitNow QR for Betty Gregory" /></div>
-            <div class="form-row"><label for="receipt">Payment receipt</label><input id="receipt" name="receipt" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" required /><p class="field-help">PNG, JPG, WEBP or PDF. Your order will be reviewed manually.</p></div>
+            <div class="form-row"><label for="receipt">Payment receipt</label><label class="receipt-upload" for="receipt"><span class="receipt-icon">↑</span><span><strong>Upload your payment receipt</strong><small>PNG, JPG, WEBP or PDF · max 10MB</small></span><span class="upload-state" id="receipt-name">Choose file</span></label><input id="receipt" name="receipt" class="sr-only" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" required /><p class="field-help">Every order is reviewed manually before we process Robux.</p></div>
             <div class="checkout-line"><div><span>Total</span><strong id="order-total">RM3.85</strong></div><button class="button button-primary" type="submit">Submit for review <span aria-hidden="true">→</span></button></div>
             <p class="form-status" id="order-status" role="status"></p>
           </form>

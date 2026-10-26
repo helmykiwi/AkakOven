@@ -13,7 +13,7 @@ const code = () => `SB-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
 function renderPackages() {
   $('#package-grid').innerHTML = activePackages.map((item) => `<button class="package-card ${item.id === selectedId ? 'selected' : ''}" type="button" data-package="${item.id}" ${item.stock < 1 ? 'disabled' : ''}><b>${item.amount}R</b><span>${money(item.price)}</span><small>${item.stock > 0 ? `${item.stock} in stock` : 'Sold out'}</small></button>`).join('');
-  $('#package-select').innerHTML = activePackages.map((item) => `<option value="${item.id}" ${item.id === selectedId ? 'selected' : ''} ${item.stock < 1 ? 'disabled' : ''}>${item.amount} Robux · ${money(item.price)}${item.stock < 1 ? ' (sold out)' : ''}</option>`).join('');
+  $('#order-package-grid').innerHTML = activePackages.map((item) => `<button class="order-package-option ${item.id === selectedId ? 'selected' : ''}" type="button" role="radio" aria-checked="${item.id === selectedId}" data-order-package="${item.id}" ${item.stock < 1 ? 'disabled' : ''}><b>${item.amount}R</b><small>${money(item.price)}</small></button>`).join('');
   updateTotal();
 }
 
@@ -50,7 +50,7 @@ async function findProfile() {
     const thumb = await fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${user.id}&size=150x150&format=Png&isCircular=false`).then((response) => response.json());
     foundProfile = { id: user.id, name: user.displayName, username: user.name, avatar: thumb.data?.[0]?.imageUrl || '' };
     $('#profile-avatar').src = foundProfile.avatar; $('#profile-avatar').alt = `${foundProfile.name}'s Roblox avatar`;
-    $('#profile-name').textContent = foundProfile.name; $('#profile-handle').textContent = `@${foundProfile.username}`; $('#profile-preview').hidden = false; help.textContent = 'This is the account that will receive Robux.';
+    $('#profile-name').textContent = foundProfile.name; $('#profile-handle').textContent = `@${foundProfile.username}`; $('#profile-link').href = `https://www.roblox.com/users/${foundProfile.id}/profile`; $('#profile-preview').hidden = false; help.textContent = 'This is the account that will receive Robux.';
   } catch { foundProfile = null; $('#profile-preview').hidden = true; help.textContent = 'We could not find that username. Check the spelling and try again.'; }
 }
 
@@ -109,7 +109,10 @@ async function saveAdminChanges() {
 }
 
 $('#package-grid').addEventListener('click', (event) => { const id = event.target.closest('[data-package]')?.dataset.package; if (id) { selectedId = id; renderPackages(); } });
-$('#package-select').addEventListener('change', (event) => { selectedId = event.target.value; renderPackages(); });
+$('#order-package-grid').addEventListener('click', (event) => { const id = event.target.closest('[data-order-package]')?.dataset.orderPackage; if (id) { selectedId = id; renderPackages(); } });
+let lookupTimer;
+$('#roblox-username').addEventListener('input', () => { clearTimeout(lookupTimer); $('#profile-preview').hidden = true; foundProfile = null; const username = $('#roblox-username').value.trim(); if (username.length < 3) { $('#profile-help').textContent = 'Type a username and we will find the account automatically.'; return; } lookupTimer = setTimeout(findProfile, 550); });
+$('#receipt').addEventListener('change', (event) => { $('#receipt-name').textContent = event.target.files[0]?.name || 'Choose file'; });
 $('#lookup-button').addEventListener('click', findProfile); $('#order-form').addEventListener('submit', saveOrder); $('#tracking-form').addEventListener('submit', trackOrder);
 $('#admin-open').addEventListener('click', () => $('#admin-dialog').showModal()); $('#admin-close').addEventListener('click', () => $('#admin-dialog').close()); $('#admin-login-button').addEventListener('click', loginAdmin); $('#save-stock').addEventListener('click', saveAdminChanges);
 $('#admin-signout').addEventListener('click', async () => { if (firebase) await firebase.authApi.signOut(firebase.auth); $('#admin-panel').hidden = true; $('#admin-login').hidden = false; });
