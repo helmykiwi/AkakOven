@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#e8f6ff" />
+    <meta name="description" content="Sealy Blox Shop - Robux via username." />
+    <title>Sealy Blox Shop | Robux via username</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Patrick+Hand&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="nav">
+        <a class="brand" href="#home" aria-label="Sealy Blox Shop home"><span class="brand-mark">S</span> sealybloxshop</a>
+        <nav aria-label="Main navigation">
+          <a href="#packages">Packages</a>
+          <a href="#how">How it works</a>
+          <a href="#track">Track order</a>
+        </nav>
+        <button class="nav-admin" id="admin-open" type="button">Admin</button>
+      </header>
+
+      <main id="home">
+        <section class="hero">
+          <div class="hero-copy">
+            <h1>Robux via username. A little more <em>play</em>, delivered your way.</h1>
+            <p class="hero-description">Top up Robux straight to a Roblox username. No password needed, no complicated steps.</p>
+            <div class="hero-actions">
+              <a class="button button-primary" href="#order">Start an order <span aria-hidden="true">→</span></a>
+              <a class="text-link" href="#track">Already ordered? Track it</a>
+            </div>
+            <div class="trust-row" aria-label="Shop benefits">
+              <span>Username only</span><span>Manual check</span><span>Subject to stock</span>
+            </div>
+          </div>
+          <div class="hero-art" aria-hidden="true">
+            <div class="paper-note"><span>Robux</span><strong>made easy</strong><small>choose · verify · play</small></div>
+            <div class="ribbon ribbon-a"></div><div class="ribbon ribbon-b"></div><div class="spark spark-one">✦</div><div class="spark spark-two">✧</div>
+          </div>
+        </section>
+
+        <section class="package-section" id="packages">
+          <div class="section-heading"><div><p class="mini-label">PICK YOUR AMOUNT</p><h2>Robux, ready when you are.</h2></div><p>Rate: RM3.85 per 100 Robux.</p></div>
+          <div class="package-grid" id="package-grid" aria-live="polite"></div>
+          <p class="stock-note">Instant processing when stock is available. We will confirm your order before fulfilment.</p>
+        </section>
+
+        <section class="order-section" id="order">
+          <div class="order-intro"><p class="mini-label">PLACE AN ORDER</p><h2>Your Roblox details, one clear checkout.</h2><p>Enter your username and we will show the profile we found before you submit.</p><div class="order-promise"><span>01</span><p><strong>Username only.</strong><br />Never share your Roblox password.</p></div><div class="order-promise"><span>02</span><p><strong>Keep your order code.</strong><br />Use it to follow progress anytime.</p></div></div>
+          <form class="order-form" id="order-form">
+            <div class="form-row"><label for="roblox-username">Roblox username</label><div class="username-field"><span>@</span><input id="roblox-username" name="username" autocomplete="username" placeholder="e.g. SealyBlox" required /><button type="button" id="lookup-button">Find profile</button></div><p class="field-help" id="profile-help">Use the username, not display name.</p></div>
+            <div class="profile-preview" id="profile-preview" hidden><img id="profile-avatar" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==" alt="" /><div><strong id="profile-name"></strong><span id="profile-handle"></span></div><span class="verified">Profile found</span></div>
+            <div class="form-row"><label for="package-select">Package</label><select id="package-select" name="package" required></select></div>
+            <div class="form-row"><label for="whatsapp">WhatsApp number</label><input id="whatsapp" name="whatsapp" inputmode="tel" placeholder="01X-XXXXXXX" required /></div>
+            <div class="form-row"><label for="note">Order note <span>(optional)</span></label><textarea id="note" name="note" rows="3" placeholder="Any detail for your order"></textarea></div>
+            <div class="payment-panel"><div><p class="mini-label">PAYMENT</p><h3>Pay with Touch ’n Go / DuitNow</h3><p>Scan the QR after creating your order, then upload the payment receipt below.</p></div><img src="./public/touchngo-qr.png" alt="DuitNow QR for Betty Gregory" /></div>
+            <div class="form-row"><label for="receipt">Payment receipt</label><input id="receipt" name="receipt" type="file" accept="image/png,image/jpeg,image/webp,application/pdf" required /><p class="field-help">PNG, JPG, WEBP or PDF. Your order will be reviewed manually.</p></div>
+            <div class="checkout-line"><div><span>Total</span><strong id="order-total">RM3.85</strong></div><button class="button button-primary" type="submit">Submit for review <span aria-hidden="true">→</span></button></div>
+            <p class="form-status" id="order-status" role="status"></p>
+          </form>
+        </section>
+
+        <section class="how-section" id="how"><div><p class="mini-label">SIMPLE PROCESS</p><h2>Three steps to playtime.</h2></div><ol><li><span>1</span><h3>Choose a package</h3><p>Pick the Robux amount that suits you.</p></li><li><span>2</span><h3>Check your profile</h3><p>We find the Roblox account from your username.</p></li><li><span>3</span><h3>Track your order</h3><p>Keep your code and watch the progress.</p></li></ol></section>
+
+        <section class="tracking-section" id="track"><div><p class="mini-label">ORDER TRACKING</p><h2>Where is my order?</h2><p>Enter the order code we gave you after checkout.</p></div><form id="tracking-form"><label class="sr-only" for="tracking-code">Order code</label><input id="tracking-code" placeholder="e.g. SB-7K3P2" required /><button class="button button-dark" type="submit">Track order</button></form><div class="tracking-result" id="tracking-result" hidden></div></section>
+      </main>
+      <footer><a class="brand" href="#home"><span class="brand-mark">S</span> sealybloxshop</a><p>Independent Roblox top-up service. Roblox is a registered trademark of Roblox Corporation.</p><a href="#order">Order Robux</a></footer>
+    </div>
+
+    <dialog id="admin-dialog"><div class="admin-dialog-head"><div><p class="mini-label">SHOP ADMIN</p><h2>Orders & stock</h2></div><button class="icon-button" id="admin-close" aria-label="Close dashboard">×</button></div><div id="admin-login"><p>Sign in with your Firebase admin account to manage orders and stock.</p><button class="button button-dark" id="admin-login-button" type="button">Sign in with Google</button><p class="form-status" id="admin-login-status"></p></div><div id="admin-panel" hidden><div class="admin-stats" id="admin-stats"></div><section><div class="admin-section-head"><h3>Package stock</h3><button class="button button-small" id="save-stock" type="button">Save stock</button></div><div class="stock-editor" id="stock-editor"></div></section><section><div class="admin-section-head"><h3>Recent orders</h3><button class="text-button" id="admin-signout" type="button">Sign out</button></div><div class="orders-admin" id="orders-admin"></div></section></div></dialog>
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

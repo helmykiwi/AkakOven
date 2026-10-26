@@ -1,0 +1,9 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /receipts/{receiptId} {
+      allow write: if request.resource.size < 10 * 1024 * 1024 && request.resource.contentType.matches('image/.*|application/pdf');
+      allow read: if request.auth != null && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
+    }
+  }
+}
