@@ -1,0 +1,20 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      ".git/**",
+      ".impeccable/**",
+      "node_modules/**",
+      "README.md",
+      "PRODUCT.md",
+      "firestore.rules",
+      "storage.rules",
+      "netlify/**",
+      "netlify.toml"
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false
+  }
+}
