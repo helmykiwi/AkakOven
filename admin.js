@@ -10,6 +10,9 @@ let fb;
 let stopLiveOrders;
 let stopLiveFeedback;
 let refreshTimer;
+let orderPage = 0;
+let feedbackPage = 0;
+const pageSize = 5;
 async function setup() {
   if (!firebaseConfig.apiKey) return;
   const [{ initializeApp }, fs, auth, storage] = await Promise.all([
@@ -28,24 +31,32 @@ async function setup() {
     storeApi: storage,
   };
 }
+function pager(kind, page, total) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  return `<nav class="pager" aria-label="${kind} pages"><button type="button" data-${kind}-page="previous" ${page === 0 ? "disabled" : ""}>Previous</button><span>Page ${page + 1} of ${pages}</span><button type="button" data-${kind}-page="next" ${page >= pages - 1 ? "disabled" : ""}>Next</button></nav>`;
+}
 function draw(orders, items, feedback) {
+  orderPage = Math.min(orderPage, Math.max(0, Math.ceil(orders.length / pageSize) - 1));
+  feedbackPage = Math.min(feedbackPage, Math.max(0, Math.ceil(feedback.length / pageSize) - 1));
+  const visibleOrders = orders.slice(orderPage * pageSize, (orderPage + 1) * pageSize);
+  const visibleFeedback = feedback.slice(feedbackPage * pageSize, (feedbackPage + 1) * pageSize);
   $("#stats").innerHTML =
     `<div class="stat"><b>${orders.length}</b><span>Total orders</span></div><div class="stat"><b>${orders.filter((o) => o.status === "Pending review").length}</b><span>Need review</span></div><div class="stat"><b>${money(orders.reduce((x, o) => x + Number(o.total || 0), 0))}</b><span>Order value</span></div>`;
   $("#order-list").innerHTML = orders.length
-    ? orders
+    ? visibleOrders
         .map(
           (o) =>
             `<article class="row"><div><b>${o.code}</b><span>@${o.username} · ${o.amount}R · ${money(o.total)}</span></div><div><small>${o.whatsapp || ""}</small>${o.receiptChunkCount || o.receiptName ? `<a href="#" data-receipt-chunks="${o.code}" data-receipt-name="${o.receiptName || 'receipt'}">Open receipt</a>` : o.receiptPath ? `<a href="#" data-receipt="${o.receiptPath}">Open receipt</a>` : `<small>No receipt uploaded</small>`}</div><select data-status="${o.code}">${["Pending review", "Payment approved", "Processing", "Completed", "Rejected"].map((s) => `<option ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}</select><button class="delete-order" type="button" data-delete="${o.code}">Delete</button></article>`,
         )
-        .join("")
+        .join("") + pager("order", orderPage, orders.length)
     : "<p>No orders yet.</p>";
   $("#feedback-list").innerHTML = feedback.length
-    ? feedback
+    ? visibleFeedback
         .map(
           (item) =>
-            `<article class="row review-row"><div><b class="stars" aria-label="${item.rating} out of 5 stars">${"★".repeat(Number(item.rating) || 0)}${"☆".repeat(5 - (Number(item.rating) || 0))}</b><span>${item.note || "No written feedback"}</span></div><small>${item.orderCode || ""} · ${item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}</small></article>`,
+            `<article class="row review-row"><div><b class="stars" aria-label="${item.rating} out of 5 stars">${"★".repeat(Number(item.rating) || 0)}${"☆".repeat(5 - (Number(item.rating) || 0))}</b><span>${item.note || "No written feedback"}</span></div><small>${item.orderCode || ""} · ${item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}</small><button class="delete-order" type="button" data-delete-feedback="${item.id}">Delete</button></article>`,
         )
-        .join("")
+        .join("") + pager("feedback", feedbackPage, feedback.length)
     : "<p>No ratings yet.</p>";
   $("#stock-list").innerHTML = items
     .map(
@@ -62,7 +73,7 @@ async function load() {
         fb.fs.orderBy("createdAt", "desc"),
       ),
     )
-  ).docs.map((d) => d.data());
+  ).docs.map((d) => ({ id: d.id, ...d.data() }));
   const packages = (
     await fb.fs.getDocs(fb.fs.query(fb.fs.collection(fb.db, "packages"), fb.fs.orderBy("amount", "asc")))
   ).docs.map((d) => d.data());
@@ -73,7 +84,7 @@ async function load() {
         fb.fs.orderBy("createdAt", "desc"),
       ),
     )
-  ).docs.map((d) => d.data());
+  ).docs.map((d) => ({ id: d.id, ...d.data() }));
   draw(orders, packages.length ? packages : defaults, feedback);
   $("#locked").hidden = true;
   $("#dashboard").hidden = false;
@@ -123,6 +134,8 @@ $("#save-order-status").addEventListener("click", async () => {
   try { for (const select of document.querySelectorAll("[data-status]")) { const id = select.dataset.status; await fb.fs.updateDoc(fb.fs.doc(fb.db, "orders", id), { status: select.value }); await fb.fs.updateDoc(fb.fs.doc(fb.db, "tracking", id), { status: select.value }); } button.textContent = "Saved"; setTimeout(() => { button.textContent = "Save order updates"; button.disabled = false; }, 1400); } catch { button.textContent = "Try again"; button.disabled = false; }
 });
 $("#order-list").addEventListener("click", async (e) => {
+  const page = e.target.dataset.orderPage;
+  if (page) { orderPage += page === "next" ? 1 : -1; await load(); return; }
   const orderCode = e.target.dataset.delete;
   if (orderCode && fb) {
     if (!window.confirm(`Delete order ${orderCode}? This cannot be undone.`)) return;
@@ -161,6 +174,15 @@ $("#order-list").addEventListener("click", async (e) => {
     "_blank",
     "noopener",
   );
+});
+$("#feedback-list").addEventListener("click", async (e) => {
+  const page = e.target.dataset.feedbackPage;
+  if (page) { feedbackPage += page === "next" ? 1 : -1; await load(); return; }
+  const feedbackId = e.target.dataset.deleteFeedback;
+  if (!feedbackId || !fb) return;
+  if (!window.confirm("Delete this customer rating? This cannot be undone.")) return;
+  try { await fb.fs.deleteDoc(fb.fs.doc(fb.db, "feedback", feedbackId)); await load(); }
+  catch { window.alert("Could not delete this rating. Please try again."); }
 });
 $("#save-stock").addEventListener("click", async () => {
   if (!fb) return;

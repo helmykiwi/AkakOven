@@ -18,7 +18,7 @@ service cloud.firestore {
       allow create: if request.auth.uid == adminId && request.auth.token.email == 'bettygrv3@gmail.com';
       allow update, delete: if false;
     }
-    match /feedback/{feedbackId} { allow create: if request.resource.data.keys().hasAll(['orderCode','rating','createdAt']); allow read: if isAdmin(); }
+    match /feedback/{feedbackId} { allow create: if request.resource.data.keys().hasAll(['orderCode','rating','createdAt']); allow read, delete: if isAdmin(); }
     match /receipts/{orderId}/chunks/{chunkId} {
       allow create: if request.resource.data.keys().hasAll(['data','index','mime','name']) && request.resource.data.data is string && request.resource.data.data.size() <= 500000;
       allow read, delete: if isAdmin();
