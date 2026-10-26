@@ -12,14 +12,14 @@ const selectedPackage = () => activePackages.find((item) => item.id === selected
 const code = () => `SB-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
 function renderPackages() {
-  $('#package-grid').innerHTML = activePackages.map((item) => `<button class="package-card ${item.id === selectedId ? 'selected' : ''}" type="button" data-package="${item.id}" ${item.stock < 1 ? 'disabled' : ''}><b>${item.amount}R</b><span>${money(item.price)}</span><small>${item.stock > 0 ? `${item.stock} in stock` : 'Sold out'}</small></button>`).join('');
+  const storefrontGrid = $('#package-grid'); if (storefrontGrid) storefrontGrid.innerHTML = activePackages.map((item) => `<button class="package-card ${item.id === selectedId ? 'selected' : ''}" type="button" data-package="${item.id}" ${item.stock < 1 ? 'disabled' : ''}><b>${item.amount}R</b><span>${money(item.price)}</span><small>${item.stock > 0 ? `${item.stock} in stock` : 'Sold out'}</small></button>`).join('');
   $('#order-package-grid').innerHTML = activePackages.map((item) => `<button class="order-package-option ${item.id === selectedId ? 'selected' : ''}" type="button" role="radio" aria-checked="${item.id === selectedId}" data-order-package="${item.id}" ${item.stock < 1 ? 'disabled' : ''}><b>${item.amount}R</b><small>${money(item.price)}</small></button>`).join('');
   updateTotal();
 }
 
 function updateTotal() {
   const item = selectedPackage();
-  $('#order-total').textContent = item ? money(item.price) : 'Select package';
+  $('#order-total').textContent = item ? money(item.price) : '';
   $('#package-select').value = item?.id || '';
 }
 
@@ -107,7 +107,7 @@ async function saveAdminChanges() {
   showAdmin(firebase ? (await firebase.firestore.getDocs(firebase.firestore.query(firebase.firestore.collection(firebase.db, 'orders'), firebase.firestore.orderBy('createdAt', 'desc')))).docs.map((doc) => doc.data()) : localAdmin());
 }
 
-$('#package-grid').addEventListener('click', (event) => { const id = event.target.closest('[data-package]')?.dataset.package; if (id) { selectedId = id; renderPackages(); } });
+$('#package-grid')?.addEventListener('click', (event) => { const id = event.target.closest('[data-package]')?.dataset.package; if (id) { selectedId = id; renderPackages(); } });
 $('#order-package-grid').addEventListener('click', (event) => { const id = event.target.closest('[data-order-package]')?.dataset.orderPackage; if (id) { selectedId = id; renderPackages(); } });
 let lookupTimer;
 $('#roblox-username').addEventListener('input', () => { clearTimeout(lookupTimer); $('#profile-preview').hidden = true; foundProfile = null; const username = $('#roblox-username').value.trim(); if (username.length < 3) { $('#profile-help').textContent = 'Type a username and we will find the account automatically.'; return; } lookupTimer = setTimeout(findProfile, 550); });
