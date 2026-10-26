@@ -4,7 +4,7 @@
       "collectionGroup": "tracking",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "username", "order": "ASCENDING" },
+        { "fieldPath": "usernameLower", "order": "ASCENDING" },
         { "fieldPath": "statusUpdatedAt", "order": "ASCENDING" }
       ]
     }

@@ -94,7 +94,7 @@ async function saveOrder(event) {
           transaction.update(packageRef, { stock: Number(packageDoc.data().stock) - 1 });
         }
         transaction.set(firebase.firestore.doc(firebase.db, 'orders', orderCode), order);
-        transaction.set(firebase.firestore.doc(firebase.db, 'tracking', orderCode), { code: orderCode, username: order.username, packageId: item.id, amount: item.amount, total: item.price, status: order.status, createdAt: order.createdAt });
+        transaction.set(firebase.firestore.doc(firebase.db, 'tracking', orderCode), { code: orderCode, username: order.username, usernameLower: order.username.toLowerCase(), packageId: item.id, amount: item.amount, total: item.price, status: order.status, createdAt: order.createdAt });
       });
       status.textContent = 'Order saved. Uploading your receipt securely...';
       await uploadReceipt(orderCode, receipt);
@@ -108,17 +108,18 @@ async function saveOrder(event) {
 }
 
 async function trackOrder(event) {
-  event.preventDefault(); const username = $('#tracking-code').value.trim().replace(/^@/, ''); const result = $('#tracking-result'); result.hidden = false; result.textContent = 'Finding your latest order...';
+  event.preventDefault(); const username = $('#tracking-code').value.trim().replace(/^@/, ''); const usernameLower = username.toLowerCase(); const result = $('#tracking-result'); result.hidden = false; result.textContent = 'Finding your latest order...';
   try {
     let orders;
     if (firebase) {
       const tracking = firebase.firestore.collection(firebase.db, 'tracking');
       const cutoff = firebase.firestore.Timestamp.fromMillis(Date.now() - 2 * 60 * 60 * 1000);
-      const [pending, recentlyUpdated] = await Promise.all([
-        firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('username', '==', username), firebase.firestore.where('status', '==', 'Pending review'))),
-        firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('username', '==', username), firebase.firestore.where('statusUpdatedAt', '>', cutoff)))
+      const [pending, recentlyUpdated, legacyPending] = await Promise.all([
+        firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('usernameLower', '==', usernameLower), firebase.firestore.where('status', '==', 'Pending review'))),
+        firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('usernameLower', '==', usernameLower), firebase.firestore.where('statusUpdatedAt', '>', cutoff))),
+        firebase.firestore.getDocs(firebase.firestore.query(tracking, firebase.firestore.where('username', '==', username), firebase.firestore.where('status', '==', 'Pending review')))
       ]);
-      orders = [...pending.docs, ...recentlyUpdated.docs].reduce((unique, doc) => unique.some((item) => item.code === doc.id) ? unique : [...unique, doc.data()], []);
+      orders = [...pending.docs, ...recentlyUpdated.docs, ...legacyPending.docs].reduce((unique, doc) => unique.some((item) => item.code === doc.id) ? unique : [...unique, doc.data()], []);
     }
     else orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]').filter((item) => item.username.toLowerCase() === username.toLowerCase() && (item.status === 'Pending review' || (item.statusUpdatedAt && Date.now() - new Date(item.statusUpdatedAt).getTime() < 2 * 60 * 60 * 1000)));
     if (!orders.length) throw new Error('not found');
