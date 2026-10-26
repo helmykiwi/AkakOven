@@ -247,4 +247,4 @@ button {
 }
 
 /* Simplified owner workspace: no navigation rail. */
-.shell{display:block}.shell aside{display:none}main{max-width:1480px;margin:0 auto}
+.shell{display:block}.shell aside{display:none}main{max-width:1480px;margin:0 auto}.admin-actions{display:flex;gap:9px}.admin-actions #save-order-status{background:#6daeea}.admin-actions #signout{background:#dcecff;color:#315b86}
