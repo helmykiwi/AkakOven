@@ -38,6 +38,7 @@ function sendNewOrderEmail(order) {
   const { serviceId, templateId, publicKey } = emailConfig;
   if (!serviceId || !templateId || !publicKey || !window.emailjs) return;
   window.emailjs.send(serviceId, templateId, {
+    email: 'sealyblox@gmail.com',
     order_code: order.code,
     roblox_username: order.username,
     robux_amount: order.amount,
