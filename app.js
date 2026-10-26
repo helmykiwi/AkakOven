@@ -73,13 +73,13 @@ async function saveOrder(event) {
       const path = `receipts/${orderCode}-${receipt.name.replace(/[^a-zA-Z0-9._-]/g, '-')}`;
       await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'orders', orderCode), order);
       await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'tracking', orderCode), { code: orderCode, username: order.username, packageId: item.id, amount: item.amount, total: item.price, status: order.status, createdAt: order.createdAt });
-      status.innerHTML = `Order received. Your tracking code is <strong>${orderCode}</strong>. Receipt is uploading in the background.`;
+      status.textContent = 'Order received. Receipt is uploading in the background — check your latest pending order anytime using your Roblox username.';
       const receiptRef = firebase.storageApi.ref(firebase.store, path);
       firebase.storageApi.uploadBytes(receiptRef, receipt, { contentType: receipt.type }).then(() => firebase.firestore.updateDoc(firebase.firestore.doc(firebase.db, 'orders', orderCode), { receiptPath: path })).catch(() => {});
     } else {
       const orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]'); orders.unshift(order); localStorage.setItem('sealy-orders', JSON.stringify(orders));
     }
-    status.innerHTML = `Order received. Your tracking code is <strong>${orderCode}</strong>. Save it, then wait for manual receipt approval.`;
+    status.textContent = 'Order received. We will review your receipt shortly — check your latest pending order anytime using your Roblox username.';
     event.target.reset(); foundProfile = null; $('#profile-preview').hidden = true;
   } catch (error) { status.textContent = `We could not submit the order: ${error.message}. Please try again.`; }
 }
