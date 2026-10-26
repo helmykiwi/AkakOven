@@ -5,6 +5,7 @@ let activePackages = [...packages];
 let selectedId = null;
 let foundProfile = null;
 let firebase = null;
+const profileLookupEndpoint = 'https://tfpovaymjiopqxgwibck.supabase.co/functions/v1/roblox-profile';
 
 const $ = (selector) => document.querySelector(selector);
 const money = (amount) => `RM${amount.toFixed(2)}`;
@@ -43,7 +44,7 @@ async function findProfile() {
   if (!username) { help.textContent = 'Enter a Roblox username first.'; return; }
   help.textContent = 'Looking for this profile...';
   try {
-    const res = await fetch(`/api/roblox-profile?username=${encodeURIComponent(username)}`);
+    const res = await fetch(`${profileLookupEndpoint}?username=${encodeURIComponent(username)}`);
     const user = await res.json();
     if (!res.ok) throw new Error(user.error || 'not found');
     foundProfile = { id: user.id, name: user.displayName, username: user.username, avatar: user.avatar || '' };
