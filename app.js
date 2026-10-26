@@ -112,7 +112,7 @@ let lookupTimer;
 $('#roblox-username').addEventListener('input', () => { clearTimeout(lookupTimer); $('#profile-preview').hidden = true; foundProfile = null; const username = $('#roblox-username').value.trim(); if (username.length < 3) { $('#profile-help').textContent = 'Type a username and we will find the account automatically.'; return; } lookupTimer = setTimeout(findProfile, 550); });
 $('#receipt').addEventListener('change', (event) => { $('#receipt-name').textContent = event.target.files[0]?.name || 'Choose file'; });
 $('#lookup-button').addEventListener('click', findProfile); $('#order-form').addEventListener('submit', saveOrder); $('#tracking-form').addEventListener('submit', trackOrder);
-$('#admin-open').addEventListener('click', () => $('#admin-dialog').showModal()); $('#admin-close').addEventListener('click', () => $('#admin-dialog').close()); $('#admin-login-button').addEventListener('click', loginAdmin); $('#save-stock').addEventListener('click', saveAdminChanges);
+$('#admin-login-button').addEventListener('click', loginAdmin); $('#save-stock').addEventListener('click', saveAdminChanges);
 $('#admin-signout').addEventListener('click', async () => { if (firebase) await firebase.authApi.signOut(firebase.auth); $('#admin-panel').hidden = true; $('#admin-login').hidden = false; });
 $('#orders-admin').addEventListener('click', async (event) => { const path = event.target.dataset.receipt; if (!path || !firebase) return; event.preventDefault(); const url = await firebase.storageApi.getDownloadURL(firebase.storageApi.ref(firebase.store, path)); window.open(url, '_blank', 'noopener'); });
 renderPackages(); setupFirebase().catch((error) => console.warn('Firebase is not configured:', error));

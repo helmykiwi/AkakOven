@@ -21,7 +21,7 @@
           <a href="#how">How it works</a>
           <a href="#track">Track order</a>
         </nav>
-        <button class="nav-admin" id="admin-open" type="button">Admin</button>
+        <a class="nav-admin" href="#admin" id="admin-open">Admin dashboard</a>
       </header>
 
       <main id="home">
@@ -67,11 +67,11 @@
         <section class="how-section" id="how"><div><p class="mini-label">SIMPLE PROCESS</p><h2>Three steps to playtime.</h2></div><ol><li><span>1</span><h3>Choose a package</h3><p>Pick the Robux amount that suits you.</p></li><li><span>2</span><h3>Check your profile</h3><p>We find the Roblox account from your username.</p></li><li><span>3</span><h3>Track your order</h3><p>Keep your code and watch the progress.</p></li></ol></section>
 
         <section class="tracking-section" id="track"><div><p class="mini-label">ORDER TRACKING</p><h2>Where is my order?</h2><p>Enter the order code we gave you after checkout.</p></div><form id="tracking-form"><label class="sr-only" for="tracking-code">Order code</label><input id="tracking-code" placeholder="e.g. SB-7K3P2" required /><button class="button button-dark" type="submit">Track order</button></form><div class="tracking-result" id="tracking-result" hidden></div></section>
+        <section class="admin-workspace" id="admin" aria-labelledby="admin-title"><aside><a class="admin-brand" href="#home"><span class="brand-mark">S</span> Sealy control</a><p>Store operations</p><nav><a href="#admin">Overview</a><a href="#admin-orders">Orders</a><a href="#admin-stock">Stock</a></nav><small>Signed-in admins can review payment receipts and update fulfilment status.</small></aside><div class="admin-main"><div class="admin-topline"><div><p class="mini-label">ADMIN DASHBOARD</p><h2 id="admin-title">Run the shop from one calm place.</h2></div><button class="button button-dark" id="admin-login-button" type="button">Sign in to manage</button></div><div id="admin-login"><p>Use the approved Firebase Google account to unlock customer details, receipts, package stock and order status.</p><p class="form-status" id="admin-login-status"></p></div><div id="admin-panel" hidden><div class="admin-stats" id="admin-stats"></div><section id="admin-stock"><div class="admin-section-head"><div><h3>Package stock</h3><p>Visible quantities update the storefront immediately.</p></div><button class="button button-small" id="save-stock" type="button">Save stock</button></div><div class="stock-editor" id="stock-editor"></div></section><section id="admin-orders"><div class="admin-section-head"><div><h3>Order review</h3><p>Open the uploaded receipt, then choose the next status.</p></div><button class="text-button" id="admin-signout" type="button">Sign out</button></div><div class="orders-admin" id="orders-admin"></div></section></div></div></section>
       </main>
       <footer><a class="brand" href="#home"><span class="brand-mark">S</span> sealybloxshop</a><p>Independent Roblox top-up service. Roblox is a registered trademark of Roblox Corporation.</p><a href="#order">Order Robux</a></footer>
     </div>
 
-    <dialog id="admin-dialog"><div class="admin-dialog-head"><div><p class="mini-label">SHOP ADMIN</p><h2>Orders & stock</h2></div><button class="icon-button" id="admin-close" aria-label="Close dashboard">×</button></div><div id="admin-login"><p>Sign in with your Firebase admin account to manage orders and stock.</p><button class="button button-dark" id="admin-login-button" type="button">Sign in with Google</button><p class="form-status" id="admin-login-status"></p></div><div id="admin-panel" hidden><div class="admin-stats" id="admin-stats"></div><section><div class="admin-section-head"><h3>Package stock</h3><button class="button button-small" id="save-stock" type="button">Save stock</button></div><div class="stock-editor" id="stock-editor"></div></section><section><div class="admin-section-head"><h3>Recent orders</h3><button class="text-button" id="admin-signout" type="button">Sign out</button></div><div class="orders-admin" id="orders-admin"></div></section></div></dialog>
     <script type="module" src="./app.js"></script>
   </body>
 </html>
