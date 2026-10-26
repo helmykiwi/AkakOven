@@ -2,13 +2,13 @@ import { firebaseConfig } from './firebase-config.js';
 
 const packages = Array.from({ length: 10 }, (_, index) => ({ id: `r${(index + 1) * 100}`, amount: (index + 1) * 100, price: Number(((index + 1) * 3.85).toFixed(2)), stock: 10 }));
 let activePackages = [...packages];
-let selectedId = 'r100';
+let selectedId = null;
 let foundProfile = null;
 let firebase = null;
 
 const $ = (selector) => document.querySelector(selector);
 const money = (amount) => `RM${amount.toFixed(2)}`;
-const selectedPackage = () => activePackages.find((item) => item.id === selectedId) || activePackages[0];
+const selectedPackage = () => activePackages.find((item) => item.id === selectedId) || null;
 const code = () => `SB-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
 function renderPackages() {
@@ -19,8 +19,8 @@ function renderPackages() {
 
 function updateTotal() {
   const item = selectedPackage();
-  $('#order-total').textContent = money(item.price);
-  $('#package-select').value = item.id;
+  $('#order-total').textContent = item ? money(item.price) : 'Select package';
+  $('#package-select').value = item?.id || '';
 }
 
 async function setupFirebase() {
@@ -55,6 +55,7 @@ async function findProfile() {
 async function saveOrder(event) {
   event.preventDefault();
   const status = $('#order-status'); const item = selectedPackage(); const receipt = $('#receipt').files[0];
+  if (!item) { status.textContent = 'Choose a Robux package before submitting.'; return; }
   if (!foundProfile) { status.textContent = 'Find and verify the Roblox profile before submitting.'; return; }
   if (!receipt) { status.textContent = 'Please upload your payment receipt.'; return; }
   const orderCode = code(); status.textContent = 'Creating your order...';
