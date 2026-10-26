@@ -80,7 +80,7 @@ async function saveOrder(event) {
       const orders = JSON.parse(localStorage.getItem('sealy-orders') || '[]'); orders.unshift(order); localStorage.setItem('sealy-orders', JSON.stringify(orders));
     }
     status.textContent = 'Order received. We will review your receipt shortly — check your latest pending order anytime using your Roblox username.';
-    event.target.reset(); foundProfile = null; $('#profile-preview').hidden = true;
+    $('#feedback-form').hidden = false; $('#feedback-form').dataset.orderCode = orderCode; event.target.reset(); foundProfile = null; $('#profile-preview').hidden = true;
   } catch (error) { status.textContent = `We could not submit the order: ${error.message}. Please try again.`; }
 }
 
