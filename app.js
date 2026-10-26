@@ -7,6 +7,7 @@ let foundProfile = null;
 let firebase = null;
 let firebaseReady;
 const profileLookupEndpoint = 'https://tfpovaymjiopqxgwibck.supabase.co/functions/v1/roblox-profile';
+const emailConfig = window.__SEALY_EMAILJS_CONFIG__ || {};
 
 const $ = (selector) => document.querySelector(selector);
 const money = (amount) => `RM${amount.toFixed(2)}`;
@@ -31,6 +32,19 @@ async function uploadReceipt(orderCode, file) {
     await firebase.firestore.setDoc(firebase.firestore.doc(firebase.db, 'receipts', orderCode, 'chunks', String(index).padStart(3, '0')), { data: base64.slice(index * chunkSize, (index + 1) * chunkSize), index, mime: file.type, name: file.name });
   }
   await firebase.firestore.updateDoc(firebase.firestore.doc(firebase.db, 'orders', orderCode), { receiptChunkCount: chunkCount, receiptMime: file.type });
+}
+
+function sendNewOrderEmail(order) {
+  const { serviceId, templateId, publicKey } = emailConfig;
+  if (!serviceId || !templateId || !publicKey || !window.emailjs) return;
+  window.emailjs.send(serviceId, templateId, {
+    order_code: order.code,
+    roblox_username: order.username,
+    robux_amount: order.amount,
+    total_payment: Number(order.total).toFixed(2),
+    whatsapp_number: order.whatsapp || 'Not provided',
+    order_note: order.note || 'No note'
+  }, { publicKey }).catch((error) => console.warn('New-order email could not be sent:', error));
 }
 
 function renderPackages() {
@@ -110,6 +124,7 @@ async function saveOrder(event) {
       await uploadReceipt(orderCode, receipt);
     }
     rememberRecentOrder({ code: order.code, username: order.username, usernameLower: order.username.toLowerCase(), amount: order.amount, total: order.total, status: order.status, createdAt: order.createdAt, confirmed: true });
+    sendNewOrderEmail(order);
     status.textContent = 'Order successfully sent! We will review your receipt shortly.';
     event.target.reset(); foundProfile = null; $('#profile-preview').hidden = true;
     window.setTimeout(() => { feedbackRating = 0; $('#feedback-form').reset(); $('#feedback-status').textContent = ''; document.querySelectorAll('[data-rating]').forEach((star) => star.classList.remove('selected')); $('#feedback-form').dataset.orderCode = orderCode; $('#review-dialog').showModal(); }, 1600);
