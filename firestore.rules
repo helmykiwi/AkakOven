@@ -2,27 +2,18 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isAdmin() { return request.auth != null && exists(/databases/$(database)/documents/admins/$(request.auth.uid)); }
-    match /orders/{orderId} { allow create: if request.resource.data.keys().hasAll(['code','username','packageId','amount','total','status','createdAt']); allow read: if isAdmin(); allow update: if isAdmin() || request.resource.data.diff(resource.data).affectedKeys().hasOnly(['receiptPath','receiptChunkCount','receiptMime']); allow delete: if isAdmin(); }
-    match /packages/{packageId} {
-      allow read: if true;
-      allow create, delete: if isAdmin();
-      allow update: if isAdmin() || (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stock']) &&
-        request.resource.data.stock is int &&
-        request.resource.data.stock == resource.data.stock - 1 &&
-        resource.data.stock > 0
-      );
+    function validText(value, maxLength) { return value is string && value.size() <= maxLength; }
+    match /orders/{id} {
+      allow create: if request.resource.data.keys().hasOnly(['customerName','whatsapp','product','category','quantity','eventDate','signingOff','cardNote','cardSize','note','status','paymentStatus','createdAt'])
+        && request.resource.data.keys().hasAll(['customerName','whatsapp','product','category','quantity','status','createdAt'])
+        && validText(request.resource.data.customerName, 100) && validText(request.resource.data.whatsapp, 30)
+        && validText(request.resource.data.product, 100) && validText(request.resource.data.category, 30)
+        && request.resource.data.quantity is int && request.resource.data.quantity >= 10 && request.resource.data.quantity <= 10000
+        && request.resource.data.status == 'New request' && request.resource.data.paymentStatus == 'Awaiting quotation'
+        && validText(request.resource.data.createdAt, 40);
+      allow read, update, delete: if isAdmin();
     }
-    match /admins/{adminId} {
-      allow read: if request.auth.uid == adminId;
-      allow create: if request.auth.uid == adminId && request.auth.token.email == 'bettygrv3@gmail.com';
-      allow update, delete: if false;
-    }
-    match /feedback/{feedbackId} { allow create: if request.resource.data.keys().hasAll(['orderCode','rating','createdAt']); allow read: if true; allow delete: if isAdmin(); }
-    match /receipts/{orderId}/chunks/{chunkId} {
-      allow create: if request.resource.data.keys().hasAll(['data','index','mime','name']) && request.resource.data.data is string && request.resource.data.data.size() <= 500000;
-      allow read, delete: if isAdmin();
-    }
-    match /tracking/{trackingId} { allow create: if request.resource.data.keys().hasAll(['code','username','amount','total','status','createdAt']); allow read: if true; allow update, delete: if isAdmin(); }
+    match /products/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /admins/{id} { allow read: if request.auth != null && request.auth.uid == id; allow write: if false; }
   }
 }

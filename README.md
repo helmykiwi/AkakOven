@@ -1,15 +1,23 @@
-# Sealy Blox Shop
+# naysh.gifts
 
-Static storefront for Robux via username. The frontend uses Firebase Authentication and Cloud Firestore when `firebase-config.js` is configured.
+Storefront untuk doorgift dan kad custom. Pelanggan menghantar permintaan; pemilik sahkan stok, harga dan detail dahulu sebelum pembayaran.
 
 ## Firebase setup
 
-1. In Firebase Console, create a Web app inside the `sealybloxshop` project.
-2. Copy its config object into `firebase-config.js`.
-3. Enable Google Authentication, Cloud Firestore, and Firebase Storage.
-4. Add your own account to the `admins` collection with a document ID equal to your Firebase Auth UID and `{ active: true }`.
-5. Publish both `firestore.rules` and `storage.rules`, then deploy this folder to Netlify.
+1. Cipta projek Firebase bernama `naysh-gifts` dan tambah Web App.
+2. Hidupkan **Firestore** dan **Email/Password Authentication**.
+3. Salin konfigurasi Web App ke `firebase-runtime-config.js` (fail ini sengaja tidak disimpan ke Git).
+4. Cipta pengguna owner dalam Authentication. Dalam Firestore, tambah dokumen `admins/<Firebase UID>` dengan contoh `{ "role": "owner" }`.
+5. Deploy `firestore.rules` dari repositori ini.
 
-## Firestore rules
+## Data yang digunakan
 
-Use the supplied `firestore.rules` after replacing the first admin UID with your own Firebase Auth UID.
+- `orders` — semua permintaan pelanggan, detail custom dan status tempahan.
+- `products` — produk yang boleh ditambah owner, harga, kos dan stok.
+- `admins` — UID owner yang dibenarkan melihat dashboard.
+
+Dashboard mengira jualan dan untung daripada tempahan yang `paymentStatus` ialah `Paid` atau status `Completed`. Bila anda mahu kutip bayaran sebenar, tambahkan `total`, `costTotal`, `profit` dan `paymentStatus` apabila sebut harga disahkan.
+
+## GitHub
+
+Projek sedia untuk repository GitHub bernama `naysh-gifts`. Jalankan commit selepas menyemak perubahan, kemudian tukar remote kepada repository baharu anda sebelum push.

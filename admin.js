@@ -1,247 +1,56 @@
-import { firebaseConfig } from "./firebase-config.js";
-const $ = (s) => document.querySelector(s),
-  money = (n) => `RM${Number(n).toFixed(2)}`;
-const defaults = Array.from({ length: 10 }, (_, i) => ({
-  id: `r${(i + 1) * 100}`,
-  amount: (i + 1) * 100,
-  stock: 10,
-}));
-let fb;
-let stopLiveOrders;
-let stopLiveFeedback;
-let refreshTimer;
-let orderPage = 0;
-let feedbackPage = 0;
-const pageSize = 5;
-let loadedOrders = [];
-let notificationsReady = false;
-let toastTimer;
+import { firebaseConfig } from './firebase-config.js';
+
+const $ = (selector) => document.querySelector(selector);
+const money = (value) => `RM${Number(value || 0).toFixed(2)}`;
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+let fb; let orders = []; let items = [];
+
 async function setup() {
-  if (!firebaseConfig.apiKey) return;
-  const [{ initializeApp }, fs, auth, storage] = await Promise.all([
-    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"),
-    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js"),
-    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js"),
-    import("https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js"),
+  if (!firebaseConfig.apiKey) { $('#login-status').textContent = 'Firebase belum disambungkan.'; return; }
+  const [{ initializeApp }, fs, auth] = await Promise.all([
+    import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js'),
+    import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js')
   ]);
-  const app = initializeApp(firebaseConfig);
-  fb = {
-    db: fs.getFirestore(app),
-    fs,
-    auth: auth.getAuth(app),
-    authApi: auth,
-    store: storage.getStorage(app),
-    storeApi: storage,
-  };
+  fb = { fs, auth, authApi: auth.getAuth(initializeApp(firebaseConfig)) };
 }
-function pager(kind, page, total) {
-  const pages = Math.max(1, Math.ceil(total / pageSize));
-  return `<nav class="pager" aria-label="${kind} pages"><button type="button" data-${kind}-page="previous" ${page === 0 ? "disabled" : ""}>Previous</button><span>Page ${page + 1} of ${pages}</span><button type="button" data-${kind}-page="next" ${page >= pages - 1 ? "disabled" : ""}>Next</button></nav>`;
-}
-function draw(orders, items, feedback) {
-  orderPage = Math.min(orderPage, Math.max(0, Math.ceil(orders.length / pageSize) - 1));
-  feedbackPage = Math.min(feedbackPage, Math.max(0, Math.ceil(feedback.length / pageSize) - 1));
-  const visibleOrders = orders.slice(orderPage * pageSize, (orderPage + 1) * pageSize);
-  const visibleFeedback = feedback.slice(feedbackPage * pageSize, (feedbackPage + 1) * pageSize);
-  $("#stats").innerHTML =
-    `<div class="stat"><b>${orders.length}</b><span>Total orders</span></div><div class="stat"><b>${orders.filter((o) => o.status === "Pending review").length}</b><span>Need review</span></div><div class="stat"><b>${money(orders.reduce((x, o) => x + Number(o.total || 0), 0))}</b><span>Order value</span></div>`;
-  $("#order-list").innerHTML = orders.length
-    ? visibleOrders
-        .map(
-          (o) =>
-            `<article class="row"><div><b>${o.code}</b><span>@${o.username} · ${o.amount}R · ${money(o.total)}</span></div><div><small>${o.whatsapp || ""}</small>${o.receiptChunkCount || o.receiptName ? `<a href="#" data-receipt-chunks="${o.code}" data-receipt-name="${o.receiptName || 'receipt'}">Open receipt</a>` : o.receiptPath ? `<a href="#" data-receipt="${o.receiptPath}">Open receipt</a>` : `<small>No receipt uploaded</small>`}</div><select data-status="${o.code}">${["Pending review", "Payment approved", "Processing", "Completed", "Rejected"].map((s) => `<option ${o.status === s ? "selected" : ""}>${s}</option>`).join("")}</select><button class="delete-order" type="button" data-delete="${o.code}">Delete</button></article>`,
-        )
-        .join("") + pager("order", orderPage, orders.length)
-    : "<p>No orders yet.</p>";
-  $("#feedback-list").innerHTML = feedback.length
-    ? visibleFeedback
-        .map(
-          (item) =>
-            `<article class="row review-row"><div><b class="stars" aria-label="${item.rating} out of 5 stars">${"★".repeat(Number(item.rating) || 0)}${"☆".repeat(5 - (Number(item.rating) || 0))}</b><span>${item.note || "No written feedback"}</span></div><small>${item.orderCode || ""} · ${item.createdAt ? new Date(item.createdAt).toLocaleString() : ""}</small><button class="delete-order" type="button" data-delete-feedback="${item.id}">Delete</button></article>`,
-        )
-        .join("") + pager("feedback", feedbackPage, feedback.length)
-    : "<p>No ratings yet.</p>";
-  $("#stock-list").innerHTML = items
-    .map(
-      (x) =>
-        `<label>${x.amount}R<input data-stock="${x.id}" value="${x.stock}" type="number" min="0"></label>`,
-    )
-    .join("");
-}
+
 async function load() {
-  const orders = (
-    await fb.fs.getDocs(
-      fb.fs.query(
-        fb.fs.collection(fb.db, "orders"),
-        fb.fs.orderBy("createdAt", "desc"),
-      ),
-    )
-  ).docs.map((d) => ({ id: d.id, ...d.data() }));
-  loadedOrders = orders;
-  const packages = (
-    await fb.fs.getDocs(fb.fs.query(fb.fs.collection(fb.db, "packages"), fb.fs.orderBy("amount", "asc")))
-  ).docs.map((d) => d.data());
-  await Promise.all(orders.map(async (order) => {
-    const trackingRef = fb.fs.doc(fb.db, "tracking", order.code);
-    const trackingDoc = await fb.fs.getDoc(trackingRef);
-    if (trackingDoc.exists()) {
-      if (!trackingDoc.data().usernameLower) await fb.fs.updateDoc(trackingRef, { usernameLower: String(order.username || "").toLowerCase() });
-      return;
-    }
-    await fb.fs.setDoc(trackingRef, {
-      code: order.code,
-      username: order.username,
-      usernameLower: String(order.username || "").toLowerCase(),
-      packageId: order.packageId,
-      amount: order.amount,
-      total: order.total,
-      status: order.status,
-      createdAt: order.createdAt,
-      ...(order.status === "Pending review" ? {} : { statusUpdatedAt: fb.fs.serverTimestamp() })
-    });
-  }));
-  const feedback = (
-    await fb.fs.getDocs(
-      fb.fs.query(
-        fb.fs.collection(fb.db, "feedback"),
-        fb.fs.orderBy("createdAt", "desc"),
-      ),
-    )
-  ).docs.map((d) => ({ id: d.id, ...d.data() }));
-  draw(orders, packages.length ? packages : defaults, feedback);
-  $("#locked").hidden = true;
-  $("#dashboard").hidden = false;
-  $("#signout").hidden = false;
-  $("#admin-top-actions").hidden = false;
+  const db = fb.fs.getFirestore();
+  const [orderDocs, productDocs] = await Promise.all([
+    fb.fs.getDocs(fb.fs.query(fb.fs.collection(db, 'orders'), fb.fs.orderBy('createdAt', 'desc'))),
+    fb.fs.getDocs(fb.fs.collection(db, 'products'))
+  ]);
+  orders = orderDocs.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  items = productDocs.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  render();
 }
-function startLiveUpdates() {
-  const refresh = () => { clearTimeout(refreshTimer); refreshTimer = setTimeout(() => load().catch(() => {}), 180); };
-  stopLiveOrders?.(); stopLiveFeedback?.();
-  notificationsReady = false;
-  stopLiveOrders = fb.fs.onSnapshot(fb.fs.collection(fb.db, "orders"), (snapshot) => {
-    if (notificationsReady) snapshot.docChanges().filter((change) => change.type === "added").forEach((change) => announceNewOrder(change.doc.data()));
-    notificationsReady = true;
-    refresh();
-  });
-  stopLiveFeedback = fb.fs.onSnapshot(fb.fs.collection(fb.db, "feedback"), refresh);
+
+function render() {
+  const paid = orders.filter((order) => order.paymentStatus === 'Paid' || order.status === 'Completed');
+  const sales = paid.reduce((sum, order) => sum + Number(order.total || 0), 0);
+  const profit = paid.reduce((sum, order) => sum + Number(order.profit || 0), 0);
+  const pending = orders.filter((order) => order.status === 'New request').length;
+  $('#stats').innerHTML = `<div class="stat"><b>${money(sales)}</b><span>Jualan diterima</span></div><div class="stat"><b>${money(profit)}</b><span>Anggaran keuntungan</span></div><div class="stat"><b>${orders.length}</b><span>Semua tempahan</span></div><div class="stat"><b>${pending}</b><span>Perlu semakan</span></div>`;
+  $('#orders').innerHTML = orders.length ? orders.slice(0, 12).map((order) => `<article><div><strong>${escapeHtml(order.customerName)} · ${escapeHtml(order.product)}</strong><small>${Number(order.quantity) || 0} unit · ${escapeHtml(order.eventDate || 'Tarikh belum diberi')}<br>${order.signingOff ? `Signing off: ${escapeHtml(order.signingOff)}` : ''}</small></div><small>${escapeHtml(order.whatsapp)}<br>${order.cardSize === 'other' ? 'Saiz custom diminta' : ''}</small><select data-id="${escapeHtml(order.id)}">${['New request', 'Quoted', 'Confirmed', 'In progress', 'Completed', 'Cancelled'].map((status) => `<option ${order.status === status ? 'selected' : ''}>${status}</option>`).join('')}</select></article>`).join('') : '<p>Belum ada tempahan.</p>';
+  const low = items.filter((product) => Number(product.stock) <= Number(product.lowStockAt || 5));
+  $('#low-stock').innerHTML = low.length ? low.map((product) => `<div class="stock-row low"><span>${escapeHtml(product.name)}</span><b>${Number(product.stock)} left</b></div>`).join('') : '<p>Semua stok berada pada paras baik.</p>';
 }
-$("#login-form").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (!fb) {
-    $("#login-status").textContent = "Firebase is not connected yet.";
-    return;
-  }
+
+$('#login-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
   try {
-    const email = $("#admin-email").value.trim(),
-      password = $("#admin-password").value;
-    const user = (
-      await fb.authApi.signInWithEmailAndPassword(fb.auth, email, password)
-    ).user;
-    const adminRef = fb.fs.doc(fb.db, "admins", user.uid);
-    let admin = await fb.fs.getDoc(adminRef);
-    if (!admin.exists() && user.email === "bettygrv3@gmail.com") {
-      await fb.fs.setDoc(adminRef, { email: user.email, role: "admin" });
-      admin = await fb.fs.getDoc(adminRef);
-    }
-    if (!admin.exists())
-      throw Error("This account is not approved as an admin.");
-    await load();
-    startLiveUpdates();
-  } catch (err) {
-    $("#login-status").textContent = err.message;
-  }
+    const user = (await fb.auth.signInWithEmailAndPassword(fb.authApi, $('#email').value, $('#password').value)).user;
+    const admin = await fb.fs.getDoc(fb.fs.doc(fb.fs.getFirestore(), 'admins', user.uid));
+    if (!admin.exists()) throw Error('Akaun ini bukan owner yang diluluskan.');
+    $('#locked').hidden = true; $('#dashboard').hidden = false; await load();
+  } catch (error) { $('#login-status').textContent = error.message; }
 });
-function announceNewOrder(order) {
-  const message = `New order: ${order.amount}R from @${order.username}`;
-  const toast = $("#order-toast"); toast.textContent = message; toast.hidden = false;
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.hidden = true; }, 6000);
-  if ("Notification" in window && Notification.permission === "granted") new Notification("Sealy Blox Shop", { body: message });
-}
-$("#enable-notifications").addEventListener("click", async () => {
-  if (!("Notification" in window)) { $("#enable-notifications").textContent = "Browser alerts unavailable"; return; }
-  const permission = await Notification.requestPermission();
-  $("#enable-notifications").textContent = permission === "granted" ? "Alerts enabled" : "Alerts blocked";
-});
-$("#signout").addEventListener("click", async () => {
-  if (fb) await fb.authApi.signOut(fb.auth);
-  stopLiveOrders?.(); stopLiveFeedback?.(); stopLiveOrders = undefined; stopLiveFeedback = undefined;
-  $("#dashboard").hidden = true;
-  $("#locked").hidden = false;
-  $("#signout").hidden = true;
-  $("#admin-top-actions").hidden = true;
-});
-$("#save-order-status").addEventListener("click", async () => {
-  const button = $("#save-order-status"); button.textContent = "Saving..."; button.disabled = true;
-  try { for (const select of document.querySelectorAll("[data-status]")) {
-    const id = select.dataset.status; const order = loadedOrders.find((item) => item.code === id);
-    if (!order) throw new Error("Order data is unavailable");
-    const changes = { status: select.value, statusUpdatedAt: fb.fs.serverTimestamp() };
-    await fb.fs.updateDoc(fb.fs.doc(fb.db, "orders", id), changes);
-    await fb.fs.setDoc(fb.fs.doc(fb.db, "tracking", id), {
-      code: order.code, username: order.username, usernameLower: String(order.username || "").toLowerCase(), packageId: order.packageId,
-      amount: order.amount, total: order.total, createdAt: order.createdAt, ...changes
-    }, { merge: true });
-  } button.textContent = "Saved"; setTimeout(() => { button.textContent = "Save order updates"; button.disabled = false; }, 1400); } catch { button.textContent = "Try again"; button.disabled = false; }
-});
-$("#order-list").addEventListener("click", async (e) => {
-  const page = e.target.dataset.orderPage;
-  if (page) { orderPage += page === "next" ? 1 : -1; await load(); return; }
-  const orderCode = e.target.dataset.delete;
-  if (orderCode && fb) {
-    if (!window.confirm(`Delete order ${orderCode}? This cannot be undone.`)) return;
-    try {
-      const chunks = await fb.fs.getDocs(fb.fs.collection(fb.db, "receipts", orderCode, "chunks"));
-      await Promise.all(chunks.docs.map((chunk) => fb.fs.deleteDoc(chunk.ref)));
-      await fb.fs.deleteDoc(fb.fs.doc(fb.db, "orders", orderCode));
-      await fb.fs.deleteDoc(fb.fs.doc(fb.db, "tracking", orderCode));
-      await load();
-    } catch {
-      window.alert("Could not delete this order. Please try again.");
-    }
-    return;
-  }
-  const receiptOrder = e.target.dataset.receiptChunks;
-  if (receiptOrder && fb) {
-    e.preventDefault();
-    const preview = window.open("", "_blank");
-    try {
-      const chunks = (await fb.fs.getDocs(fb.fs.query(fb.fs.collection(fb.db, "receipts", receiptOrder, "chunks"), fb.fs.orderBy("index", "asc")))).docs.map((doc) => doc.data());
-      const base64 = chunks.map((chunk) => chunk.data).join("");
-      const binary = atob(base64); const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-      const url = URL.createObjectURL(new Blob([bytes], { type: chunks[0]?.mime || "application/octet-stream" }));
-      if (!preview) throw new Error("Preview window was blocked");
-      preview.opener = null;
-      preview.location.replace(url);
-    } catch { if (preview) preview.close(); window.alert("Could not open this receipt. Please try again."); }
-    return;
-  }
-  const path = e.target.dataset.receipt;
-  if (!path || !fb) return;
-  e.preventDefault();
-  window.open(
-    await fb.storeApi.getDownloadURL(fb.storeApi.ref(fb.store, path)),
-    "_blank",
-    "noopener",
-  );
-});
-$("#feedback-list").addEventListener("click", async (e) => {
-  const page = e.target.dataset.feedbackPage;
-  if (page) { feedbackPage += page === "next" ? 1 : -1; await load(); return; }
-  const feedbackId = e.target.dataset.deleteFeedback;
-  if (!feedbackId || !fb) return;
-  if (!window.confirm("Delete this customer rating? This cannot be undone.")) return;
-  try { await fb.fs.deleteDoc(fb.fs.doc(fb.db, "feedback", feedbackId)); await load(); }
-  catch { window.alert("Could not delete this rating. Please try again."); }
-});
-$("#save-stock").addEventListener("click", async () => {
-  if (!fb) return;
-  for (const input of document.querySelectorAll("[data-stock]"))
-    await fb.fs.setDoc(fb.fs.doc(fb.db, "packages", input.dataset.stock), {
-      id: input.dataset.stock,
-      amount: Number(input.dataset.stock.slice(1)),
-      stock: Number(input.value),
-    });
-  await load();
+$('#orders').addEventListener('change', async (event) => { if (event.target.dataset.id) { await fb.fs.updateDoc(fb.fs.doc(fb.fs.getFirestore(), 'orders', event.target.dataset.id), { status: event.target.value }); await load(); } });
+$('#refresh').addEventListener('click', load);
+$('#signout').addEventListener('click', async () => { await fb.auth.signOut(fb.authApi); $('#dashboard').hidden = true; $('#locked').hidden = false; });
+$('#product-form').addEventListener('submit', async (event) => {
+  event.preventDefault(); const data = new FormData(event.currentTarget); const price = Number(data.get('price')); const cost = Number(data.get('cost'));
+  try { await fb.fs.addDoc(fb.fs.collection(fb.fs.getFirestore(), 'products'), { name: data.get('name').trim(), price, cost, stock: Number(data.get('stock')), lowStockAt: 5, createdAt: new Date().toISOString() }); event.currentTarget.reset(); $('#product-status').textContent = 'Produk disimpan.'; await load(); } catch { $('#product-status').textContent = 'Tidak dapat simpan produk.'; }
 });
 setup();
