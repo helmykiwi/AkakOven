@@ -1,23 +1,16 @@
-# naysh.gifts
+# AkakOven
 
-Storefront untuk doorgift dan kad custom. Pelanggan menghantar permintaan; pemilik sahkan stok, harga dan detail dahulu sebelum pembayaran.
+Sourdough pre-order storefront built with Firebase Hosting, Firestore and Firebase Authentication.
 
-## Firebase setup
+## Customer flow
 
-1. Cipta projek Firebase bernama `naysh-gifts` dan tambah Web App.
-2. Hidupkan **Firestore** dan **Email/Password Authentication**.
-3. Salin konfigurasi Web App ke `firebase-runtime-config.js` (fail ini sengaja tidak disimpan ke Git).
-4. Cipta pengguna owner dalam Authentication. Dalam Firestore, tambah dokumen `admins/<Firebase UID>` dengan contoh `{ "role": "owner" }`.
-5. Deploy `firestore.rules` dari repositori ini.
+Browse the menu, add loaves to the basket, choose pickup or self-arranged delivery, and send an order. Orders are stored in Firestore; the site falls back to local browser storage while Firebase is not connected.
 
-## Data yang digunakan
+## Admin setup
 
-- `orders` — semua permintaan pelanggan, detail custom dan status tempahan.
-- `products` — produk yang boleh ditambah owner, harga, kos dan stok.
-- `admins` — UID owner yang dibenarkan melihat dashboard.
+1. Enable Email/Password in Firebase Authentication.
+2. Create the intended admin user.
+3. Add a Firestore document at `admins/<user-uid>` so the user can access `admin.html`.
+4. Deploy rules and Hosting with `firebase deploy`.
 
-Dashboard mengira jualan dan untung daripada tempahan yang `paymentStatus` ialah `Paid` atau status `Completed`. Bila anda mahu kutip bayaran sebenar, tambahkan `total`, `costTotal`, `profit` dan `paymentStatus` apabila sebut harga disahkan.
-
-## GitHub
-
-Projek sedia untuk repository GitHub bernama `naysh-gifts`. Jalankan commit selepas menyemak perubahan, kemudian tukar remote kepada repository baharu anda sebelum push.
+Firebase project: `akakoven`.
