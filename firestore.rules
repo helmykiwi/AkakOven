@@ -11,7 +11,7 @@ service cloud.firestore {
     }
 
     match /checkoutIntents/{id} {
-      allow create: if request.resource.data.keys().hasOnly(['customerName','whatsapp','fulfilment','orderDate','address','driverNote','note','items','total','state','createdAt'])
+      allow create: if request.resource.data.keys().hasOnly(['customerName','whatsapp','fulfilment','orderDate','address','driverNote','selfDeliveryNote','note','items','total','state','createdAt'])
         && request.resource.data.keys().hasAll(['customerName','whatsapp','fulfilment','orderDate','items','total','state','createdAt'])
         && request.resource.data.customerName is string && request.resource.data.customerName.size() > 0 && request.resource.data.customerName.size() <= 100
         && request.resource.data.whatsapp is string && request.resource.data.whatsapp.size() > 0 && request.resource.data.whatsapp.size() <= 30
