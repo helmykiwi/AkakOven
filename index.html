@@ -8,7 +8,7 @@
   <title>AkakOven — Roti sourdough, dibakar segar</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./storefront.css">
 </head>
@@ -17,7 +17,6 @@
   <header class="store-header">
     <a class="store-brand" href="#home" aria-label="AkakOven — halaman utama"><img src="./public/akakoven/logo.png" alt="AkakOven"></a>
     <nav aria-label="Navigasi utama"><a class="active" href="#menu">Menu minggu ini</a><a href="#order-info">Cara tempah</a></nav>
-    <button class="store-bag" id="cartButton" type="button" aria-label="Buka bakul"><span class="bag-label">Bakul</span><span class="bag-count" id="cartCount">0</span></button>
   </header>
 
   <main id="home">
@@ -32,8 +31,6 @@
       <div class="store-hero-photo"><img src="./public/akakoven/plain.png" alt="Roti sourdough plain AkakOven yang baru dibakar"><div class="photo-note"><span>BAKED WITH CARE</span><strong>Setiap batch,<br>dibuat fresh.</strong></div><span class="photo-stamp">AMPANG<br>BAKERY</span></div>
     </section>
 
-    <section class="weekly-note" aria-label="Maklumat batch"><div><span class="weekly-icon">01</span><p><b>Batch kecil</b><small>Diperam perlahan, dibakar segar</small></p></div><div><span class="weekly-icon">02</span><p><b>Pickup Ahad</b><small>Taman Muda, Ampang</small></p></div><div><span class="weekly-icon">03</span><p><b>Self-arrange pun boleh</b><small>Ambil sendiri atau hantar runner</small></p></div></section>
-
     <section id="menu" class="store-menu">
       <div class="menu-heading"><div><p class="store-eyebrow">MENU MINGGU INI <span>·</span> 4 FLAVOUR</p><h2>Pilih roti, <em>terus tempah.</em></h2></div><p>Tekan “Tambah” untuk masukkan dalam bakul. Boleh ubah kuantiti bila-bila sebelum checkout.</p></div>
       <div id="productGrid" class="products store-products" aria-live="polite"></div>
@@ -45,9 +42,7 @@
 
   <footer class="store-footer"><a href="#home"><img src="./public/akakoven/logo.png" alt="AkakOven"></a><p>Sourdough segar, dibuat dengan penuh perhatian.</p><div><a href="https://wa.me/60192021485" target="_blank" rel="noreferrer">WhatsApp</a><a href="./admin.html">Admin</a></div><small>© AkakOven · Ampang, Selangor</small></footer>
 
-  <aside id="cart" class="cart" aria-hidden="true"><div class="cart-head"><div><p class="overline">PESANAN ANDA</p><h2>Bakul</h2></div><button id="closeCart" type="button" aria-label="Tutup bakul">×</button></div><div id="cartItems" class="cart-items"></div><div class="cart-footer"><div><span>Jumlah anggaran</span><strong id="cartTotal">RM0.00</strong></div><button id="checkout" class="primary full" type="button">Teruskan ke detail <span>→</span></button></div></aside>
   <button id="stickyBag" class="sticky-bag" type="button" aria-label="Semak bakul dan teruskan ke checkout"><span class="sticky-bag-count"><b id="stickyCount">0</b> item dalam bakul</span><span class="sticky-bag-action">Semak pesanan <strong id="stickyTotal">RM0.00</strong><i aria-hidden="true">→</i></span></button>
-  <div id="backdrop" class="backdrop" hidden></div>
 
   <dialog id="checkoutDialog" class="order-dialog"><button id="closeCheckout" class="dialog-close" type="button" aria-label="Tutup">×</button><div class="order-layout"><section class="order-summary"><p class="overline">PESANAN ANDA</p><h2>Semak bakul.</h2><div id="dialogItems" class="dialog-items"></div><div class="dialog-grand-total"><span>Jumlah roti</span><strong id="dialogTotal">RM0.00</strong></div><p class="summary-footnote">Caj penghantaran dikira selepas alamat dimasukkan.</p></section><form id="orderForm" class="order-form"><p class="overline">DETAIL TEMPAHAN</p><h2>Ke mana roti nak pergi?</h2><label>Nama penuh<input required name="customerName" autocomplete="name" placeholder="Nama anda"></label><label>WhatsApp<input required name="whatsapp" inputmode="tel" autocomplete="tel" placeholder="01X-XXXX XXXX"></label><fieldset class="fulfilment-options"><legend>Cara terima pesanan</legend><label id="fulfilmentPickup" class="radio selected"><input type="radio" name="fulfilment" value="pickup" checked><span><strong>Pickup & self arrange delivery</strong><small>Ambil sendiri di Taman Muda atau hantar runner anda.</small></span></label><label id="fulfilmentDelivery" class="radio"><input type="radio" name="fulfilment" value="delivery"><span><strong>Delivery</strong><small>Kami aturkan penghantaran ke alamat anda.</small></span></label></fieldset><div id="addressFields" hidden><label>Alamat penghantaran<textarea id="address" name="address" rows="3" placeholder="No. rumah, jalan, poskod, bandar"></textarea></label><label>Nota untuk driver<input name="driverNote" placeholder="Contoh: call bila sampai"></label></div><div id="selfDeliveryFields" hidden><label>Nota pickup / runner<input name="selfDeliveryNote" placeholder="Contoh: runner ambil jam 3 petang"></label></div><div id="deliveryFeeRow" class="delivery-fee" hidden><span>Caj penghantaran</span><strong id="deliveryFeeValue">Akan disahkan mengikut lokasi</strong></div><label>Tarikh yang diinginkan<input required name="orderDate" type="date"></label><label>Nota tambahan<textarea name="note" rows="2" placeholder="Contoh: nak slice siap-siap"></textarea></label><button id="submitOrder" class="primary full" type="submit">Teruskan ke payment <span>→</span></button><p id="formStatus" role="status" aria-live="polite"></p></form></div></dialog>
   <script src="./firebase-runtime-config.js"></script><script type="module" src="./app.js"></script>
