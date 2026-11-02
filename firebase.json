@@ -1,4 +1,7 @@
 {
+  "functions": {
+    "source": "functions"
+  },
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
@@ -18,11 +21,20 @@
       ".firebaserc",
       ".git/**",
       ".impeccable/**",
+      ".firebase/**",
+      "BB-Topup/**",
+      "dessert/**",
+      "littlewhimsy/**",
+      "supabase/**",
+      "public/choookies/**",
+      "**/*.tar.gz",
       "node_modules/**",
       "README.md",
       "PRODUCT.md",
       "firestore.rules",
       "storage.rules",
+      "functions/**",
+      ".env*",
       "netlify/**",
       "netlify.toml"
     ],

@@ -1,2 +1,5 @@
 firebase-runtime-config.js
 .firebase/
+functions/.env.akakoven
+functions/.env.akakoven.local
+functions/node_modules/
